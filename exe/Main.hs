@@ -107,4 +107,5 @@ main = do
   _ <- writeTags out $ toWriteTags args timestamp
   tags <- readTags out
   filesize <- getFileSize out
+  _ <- putStrLn $ "file=" <> out
   putStrLn . Text.unpack $ podcastItem tags fn uuid timestamp filesize
