@@ -4,7 +4,7 @@ let
       spudcast-img = pkgs.dockerTools.buildImage {
         name = "spudcast";
         tag = "latest";
-        config.Cmd = [ "${haskellPackages.spudcast}/bin/spudcast" ];
+        config.Cmd = [ "${haskellPackages.spudcast}/bin/tag-audio" ];
       };
 
       haskellPackages = pkgs.haskellPackages.override {
