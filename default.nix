@@ -4,7 +4,7 @@ let
       spudcast-img = pkgs.dockerTools.buildImage {
         name = "spudcast";
         tag = "latest";
-        config.Cmd = [ "${haskellPackages.spudcast-run}/bin/spudcast" ];
+        config.Cmd = [ "${haskellPackages.spudcast}/bin/spudcast" ];
       };
 
       haskellPackages = pkgs.haskellPackages.override {
@@ -31,4 +31,3 @@ in
   { spudcast = pkgs.haskellPackages.spudcast;
     spudcast-img = pkgs.spudcast-img;
   }
-
