@@ -1,0 +1,15 @@
+# Create docker image
+# First you need to make sure .ghc.environment* doesn't exist in dir
+nix-build --attr spudcast-img
+
+# Load the resulting image into docker
+docker load -i result
+
+# Run the docker image
+PORT=8080 && docker run --rm -p 8080:${PORT} -e PORT=${PORT} spudcast
+
+# In order to import into GCR you need to tag the image
+docker tag $(docker images -q spudcast:latest) gcr.io/stanleystots/spudcast
+
+# Import the image into GCR
+docker push gcr.io/stanleystots/spudcast
