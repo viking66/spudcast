@@ -1,5 +1,6 @@
-{ mkDerivation, base, directory, filepath, htaglib
-, optparse-applicative, stdenv, text, time, uuid
+{ mkDerivation, aeson, base, directory, filepath, gogol-pubsub
+, htaglib, optparse-applicative, servant-server, stdenv, text, time
+, uuid, wai, wai-extra, warp
 }:
 mkDerivation {
   pname = "spudcast";
@@ -7,7 +8,10 @@ mkDerivation {
   src = ./.;
   isLibrary = true;
   isExecutable = true;
-  libraryHaskellDepends = [ base htaglib text time uuid ];
+  libraryHaskellDepends = [
+    aeson base gogol-pubsub htaglib servant-server text time uuid wai
+    wai-extra warp
+  ];
   executableHaskellDepends = [
     base directory filepath optparse-applicative text time uuid
   ];

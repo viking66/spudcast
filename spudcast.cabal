@@ -18,15 +18,22 @@ extra-source-files:  CHANGELOG.md
 
 library
   exposed-modules:     Spudcast.Feed
+                     , Spudcast.Server
                      , Spudcast.Tags
                      , Spudcast.Types
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.12 && <4.13
+                     , aeson
+                     , gogol-pubsub
                      , htaglib
+                     , servant-server
                      , text
                      , time
                      , uuid
+                     , wai
+                     , wai-extra
+                     , warp
   hs-source-dirs:      src
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
@@ -51,6 +58,18 @@ executable tag-audio
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
                      , RecordWildCards
+  ghc-options:         -Wall -Wcompat -Wincomplete-record-updates
+                       -Wincomplete-uni-patterns -Wredundant-constraints
+                       -Wno-name-shadowing
+
+executable server
+  main-is:             Server.hs
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base >=4.12 && <4.13
+                     , spudcast
+  hs-source-dirs:      exe
+  default-language:    Haskell2010
   ghc-options:         -Wall -Wcompat -Wincomplete-record-updates
                        -Wincomplete-uni-patterns -Wredundant-constraints
                        -Wno-name-shadowing
