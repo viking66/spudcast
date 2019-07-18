@@ -1,4 +1,4 @@
-module Spudcast.Lib
+module Spudcast.Tags
   ( podcastItem
   , readTags
   , writeTags

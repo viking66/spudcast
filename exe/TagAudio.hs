@@ -20,10 +20,10 @@ import System.Directory ( copyFile
                         )
 import System.FilePath (replaceFileName)
 
-import Spudcast.Lib ( podcastItem
-                    , readTags
-                    , writeTags
-                    )
+import Spudcast.Feed (podcastItem)
+import Spudcast.Tags ( readTags
+                     , writeTags
+                     )
 import Spudcast.Types (WriteTags (..))
 
 data AppArgs = AppArgs
