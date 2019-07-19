@@ -16,3 +16,6 @@ docker push gcr.io/stanleystots/spudcast
 
 # Deploy the image
 gcloud beta run deploy spudcast --image gcr.io/stanleystots/spudcast --platform managed --region us-central1
+
+# Call Service
+curl -H "Authorization: Bearer $(gcloud config config-helper --format 'value(credential.id_token)')" https://spudcast-c4zbgpzdpa-uc.a.run.app -d '{"message":{"data":"cmFtYnV0YW4=","messageId":"618490679075306","message_id":"618490679075306","publishTime":"2019-07-17T03:41:29.776Z","publish_time":"2019-07-17T03:41:29.776Z"},"subscription":"projects/stanleystots/subscriptions/storage-audio"}'
