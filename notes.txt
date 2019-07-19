@@ -13,3 +13,6 @@ docker tag $(docker images -q spudcast:latest) gcr.io/stanleystots/spudcast
 
 # Import the image into GCR
 docker push gcr.io/stanleystots/spudcast
+
+# Deploy the image
+gcloud beta run deploy spudcast --image gcr.io/stanleystots/spudcast --platform managed --region us-central1
