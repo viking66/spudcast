@@ -27,6 +27,7 @@ library
                      , aeson
                      , gogol-pubsub
                      , htaglib
+                     , servant-multipart
                      , servant-server
                      , text
                      , time

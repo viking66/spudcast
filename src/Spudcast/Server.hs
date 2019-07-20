@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Spudcast.Server
@@ -8,21 +8,16 @@ module Spudcast.Server
   ) where
 
 import Control.Monad.IO.Class (liftIO)
-import Data.Aeson ( FromJSON
-                  , ToJSON
-                  )
 import Data.Maybe (fromMaybe)
 import Data.Proxy (Proxy (..))
-import Data.Text (Text)
-import GHC.Generics (Generic)
-import Network.Google.PubSub (PubsubMessage)
+import Data.Text ( Text
+                 , pack
+                 )
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Servant ( Application
                , JSON
-               , NoContent (..)
-               , PostNoContent
-               , ReqBody
+               , Post
                , Server
                , (:>)
                , serve
@@ -30,21 +25,42 @@ import Servant ( Application
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
 
-data Req = Req
-  { subscription :: Text
-  , message :: PubsubMessage
-  }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+import Servant.Multipart
+import Network.Wai.Parse
 
-type API = ReqBody '[JSON] Req :> PostNoContent '[JSON] NoContent
+data Rambutan = Rambutan { foo :: Text, bar :: FilePath }
+
+data Tmp'
+
+instance MultipartBackend Tmp' where
+    type MultipartResult Tmp' = FilePath
+    type MultipartBackendOptions Tmp' = TmpBackendOptions
+
+    defaultBackendOptions _ = TmpBackendOptions
+      { getTmpDir = pure "."
+      , filenamePat = "servant-multipart.buf"
+      }
+    backend _ opts = tmpBackend
+      where
+        tmpBackend = tempFileBackEndOpts (getTmpDir opts) (filenamePat opts)
+
+instance FromMultipart Tmp' Rambutan where
+  fromMultipart multipartData =
+    Rambutan
+      <$> lookupInput "foo" multipartData
+      <*> fmap fdPayload (lookupFile "bar" multipartData)
+
+type API = MultipartForm Tmp' Rambutan :> Post '[JSON] Text
 
 api :: Proxy API
 api = Proxy
 
 server :: Server API
-server = handleMsg
+server = handleRambutan
   where
-    handleMsg msg = liftIO (putStrLn $ show msg) >> pure NoContent
+    handleRambutan rambutan = do
+      b <- liftIO $ pack <$> readFile (bar rambutan)
+      pure $ foo rambutan <> b
 
 app :: Application
 app = serve api server
