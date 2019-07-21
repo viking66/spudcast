@@ -19,14 +19,17 @@ extra-source-files:  CHANGELOG.md
 library
   exposed-modules:     Spudcast.Feed
                      , Spudcast.Server
+                     , Spudcast.Storage
                      , Spudcast.Tags
                      , Spudcast.Types
   -- other-modules:
   -- other-extensions:
   build-depends:       base >=4.12 && <4.13
                      , aeson
-                     , gogol-pubsub
+                     , gogol
+                     , gogol-storage
                      , htaglib
+                     , lens
                      , servant-multipart
                      , servant-server
                      , text

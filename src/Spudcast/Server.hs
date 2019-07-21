@@ -15,55 +15,70 @@ import Data.Text ( Text
                  )
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
+import Network.Wai.Parse (defaultParseRequestBodyOptions)
 import Servant ( Application
+               , Context (..)
+               , Get
                , JSON
                , Post
                , Server
                , (:>)
-               , serve
+               , (:<|>) (..)
+               , serveWithContext
                )
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
 
-import Servant.Multipart
-import Network.Wai.Parse
+import Spudcast.Storage (listObjects)
+
+import Servant.Multipart ( FromMultipart
+                         , MultipartForm
+                         , MultipartOptions (..)
+                         , Tmp
+                         , TmpBackendOptions (..)
+                         , fdPayload
+                         , fromMultipart
+                         , lookupFile
+                         , lookupInput
+                         )
+import Network.Google.Storage (Objects)
 
 data Rambutan = Rambutan { foo :: Text, bar :: FilePath }
 
-data Tmp'
-
-instance MultipartBackend Tmp' where
-    type MultipartResult Tmp' = FilePath
-    type MultipartBackendOptions Tmp' = TmpBackendOptions
-
-    defaultBackendOptions _ = TmpBackendOptions
-      { getTmpDir = pure "."
-      , filenamePat = "servant-multipart.buf"
-      }
-    backend _ opts = tmpBackend
-      where
-        tmpBackend = tempFileBackEndOpts (getTmpDir opts) (filenamePat opts)
-
-instance FromMultipart Tmp' Rambutan where
+instance FromMultipart Tmp Rambutan where
   fromMultipart multipartData =
     Rambutan
       <$> lookupInput "foo" multipartData
       <*> fmap fdPayload (lookupFile "bar" multipartData)
 
-type API = MultipartForm Tmp' Rambutan :> Post '[JSON] Text
+type API = MultipartForm Tmp Rambutan :> Post '[JSON] Text
+      :<|> Get '[JSON] Objects
 
 api :: Proxy API
 api = Proxy
 
 server :: Server API
 server = handleRambutan
+    :<|> handleObjects
   where
     handleRambutan rambutan = do
       b <- liftIO $ pack <$> readFile (bar rambutan)
       pure $ foo rambutan <> b
+    handleObjects = liftIO listObjects
+
+ctx :: Context '[MultipartOptions Tmp]
+ctx = multipartOptions :. EmptyContext
+  where
+    multipartOptions = MultipartOptions
+      { generalOptions = defaultParseRequestBodyOptions
+      , backendOptions = TmpBackendOptions
+        { getTmpDir = pure "."
+        , filenamePat = "servant-multipart.buf"
+        }
+      }
 
 app :: Application
-app = serve api server
+app = serveWithContext api ctx server
 
 getPort :: IO Int
 getPort = do
