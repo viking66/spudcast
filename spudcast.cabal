@@ -17,7 +17,9 @@ build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
 library
-  exposed-modules:     Spudcast.Feed
+  exposed-modules:     Spudcast.API
+                     , Spudcast.Feed
+                     , Spudcast.Handlers
                      , Spudcast.Server
                      , Spudcast.Storage
                      , Spudcast.Tags
