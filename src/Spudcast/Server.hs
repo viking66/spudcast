@@ -4,7 +4,6 @@ module Spudcast.Server
   ( runServer
   ) where
 
-import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
@@ -28,7 +27,7 @@ import Spudcast.API ( API
 import Spudcast.Handlers (uploadPodcast)
 
 server :: Server API
-server = liftIO . uploadPodcast
+server = uploadPodcast
 
 ctx :: Context '[MultipartOptions Tmp]
 ctx = multipartOptions :. EmptyContext
