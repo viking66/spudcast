@@ -1,9 +1,11 @@
 module Spudcast.Storage
-  ( listObjects
+  ( write
   ) where
 
 import Control.Lens ( (<&>)
                     , (.~)
+                    , (&)
+                    , (?~)
                     )
 import Network.Google ( LogLevel (..)
                       , envLogger
@@ -12,17 +14,22 @@ import Network.Google ( LogLevel (..)
                       , newLogger
                       , runGoogle
                       , runResourceT
-                      , send
+                      , sourceBody
+                      , upload
                       )
-import Network.Google.Storage ( Objects
-                              , objectsList
+import Network.Google.Storage ( Object
+                              , object'
+                              , objectsInsert
+                              , oiName
                               , storageReadWriteScope
                               )
 import System.IO (stdout)
+import Data.Text (Text)
 
-listObjects :: IO Objects
-listObjects = do
+write :: Text -> FilePath -> Text -> IO Object
+write bucket input output = do
   lgr <- newLogger Debug stdout
   env <- newEnv <&> (envLogger .~ lgr) . (envScopes .~ storageReadWriteScope)
+  body <- sourceBody input
   runResourceT . runGoogle env $
-    send $ objectsList "www.stanleystots.com"
+    upload (objectsInsert bucket object' & oiName ?~ output) body
