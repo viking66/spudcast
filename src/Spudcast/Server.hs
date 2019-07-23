@@ -10,6 +10,7 @@ import Network.Wai.Middleware.RequestLogger (logStdoutDev)
 import Network.Wai.Parse (defaultParseRequestBodyOptions)
 import Servant ( Application
                , Context (..)
+               , (:<|>) (..)
                , Server
                , serveWithContext
                )
@@ -24,10 +25,13 @@ import Servant.Multipart ( MultipartOptions (..)
 import Spudcast.API ( API
                     , api
                     )
-import Spudcast.Handlers (uploadPodcast)
+import Spudcast.Handlers ( pong
+                         , uploadPodcast
+                         )
 
 server :: Server API
-server = uploadPodcast
+server = pong
+    :<|> uploadPodcast
 
 ctx :: Context '[MultipartOptions Tmp]
 ctx = multipartOptions :. EmptyContext

@@ -22,9 +22,12 @@ import Data.Proxy (Proxy (..))
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics (Generic)
-import Servant ( JSON
+import Servant ( Get
+               , JSON
+               , PlainText
                , Post
                , (:>)
+               , (:<|>)
                )
 
 import Servant.Multipart ( FromMultipart
@@ -59,7 +62,8 @@ getEpisodeDetails (PodcastEpisode ed _) = ed
 getAudioPath :: PodcastEpisode -> FilePath
 getAudioPath (PodcastEpisode _ fp) = fp
 
-type API = MultipartForm Tmp PodcastEpisode :> Post '[JSON] EpisodeDetails
+type API = "ping" :> Get '[JSON] Text
+      :<|> "podcast" :> MultipartForm Tmp PodcastEpisode :> Post '[PlainText] Text
 
 api :: Proxy API
 api = Proxy

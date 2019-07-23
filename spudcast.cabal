@@ -29,6 +29,8 @@ library
   build-depends:       base >=4.12 && <4.13
                      , aeson
                      , bytestring
+                     , directory
+                     , filepath
                      , gogol
                      , gogol-storage
                      , htaglib
