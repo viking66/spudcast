@@ -51,26 +51,6 @@ library
                        -Wincomplete-uni-patterns -Wredundant-constraints
                        -Wno-name-shadowing
 
-executable tag-audio
-  main-is:             TagAudio.hs
-  -- other-modules:
-  -- other-extensions:
-  build-depends:       base >=4.12 && <4.13
-                     , directory
-                     , filepath
-                     , optparse-applicative
-                     , spudcast
-                     , text
-                     , time
-                     , uuid
-  hs-source-dirs:      exe
-  default-language:    Haskell2010
-  default-extensions:  OverloadedStrings
-                     , RecordWildCards
-  ghc-options:         -Wall -Wcompat -Wincomplete-record-updates
-                       -Wincomplete-uni-patterns -Wredundant-constraints
-                       -Wno-name-shadowing
-
 executable server
   main-is:             Server.hs
   -- other-modules:

@@ -1,5 +1,5 @@
-{ mkDerivation, aeson, base, directory, filepath, gogol-pubsub
-, htaglib, optparse-applicative, servant-multipart, servant-server
+{ mkDerivation, aeson, base, bytestring, directory, filepath, gogol
+, gogol-storage, htaglib, lens, servant-multipart, servant-server
 , stdenv, text, time, uuid, wai, wai-extra, warp
 }:
 mkDerivation {
@@ -9,11 +9,10 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    aeson base gogol-pubsub htaglib servant-multipart servant-server
-    text time uuid wai wai-extra warp
+    aeson base bytestring directory filepath gogol gogol-storage
+    htaglib lens servant-multipart servant-server text time uuid wai
+    wai-extra warp
   ];
-  executableHaskellDepends = [
-    base directory filepath optparse-applicative text time uuid
-  ];
+  executableHaskellDepends = [ base ];
   license = stdenv.lib.licenses.bsd3;
 }
