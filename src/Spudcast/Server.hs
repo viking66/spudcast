@@ -7,20 +7,13 @@ module Spudcast.Server
 import Data.Maybe (fromMaybe)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.RequestLogger (logStdoutDev)
-import Network.Wai.Parse (defaultParseRequestBodyOptions)
 import Servant ( Application
-               , Context (..)
                , (:<|>) (..)
                , Server
-               , serveWithContext
+               , serve
                )
 import System.Environment (lookupEnv)
 import Text.Read (readMaybe)
-
-import Servant.Multipart ( MultipartOptions (..)
-                         , Tmp
-                         , TmpBackendOptions (..)
-                         )
 
 import Spudcast.API ( API
                     , api
@@ -33,19 +26,8 @@ server :: Server API
 server = pong
     :<|> uploadPodcast
 
-ctx :: Context '[MultipartOptions Tmp]
-ctx = multipartOptions :. EmptyContext
-  where
-    multipartOptions = MultipartOptions
-      { generalOptions = defaultParseRequestBodyOptions
-      , backendOptions = TmpBackendOptions
-        { getTmpDir = pure "."
-        , filenamePat = "servant-multipart.buf"
-        }
-      }
-
 app :: Application
-app = serveWithContext api ctx server
+app = serve api server
 
 getPort :: IO Int
 getPort = do
