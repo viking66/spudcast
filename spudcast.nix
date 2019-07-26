@@ -1,6 +1,6 @@
 { mkDerivation, aeson, base, bytestring, directory, filepath, gogol
 , gogol-storage, htaglib, lens, servant-multipart, servant-server
-, stdenv, text, time, uuid, wai, wai-extra, warp
+, stdenv, text, time, uuid, wai, wai-extra, warp, xml
 }:
 mkDerivation {
   pname = "spudcast";
@@ -11,7 +11,7 @@ mkDerivation {
   libraryHaskellDepends = [
     aeson base bytestring directory filepath gogol gogol-storage
     htaglib lens servant-multipart servant-server text time uuid wai
-    wai-extra warp
+    wai-extra warp xml
   ];
   executableHaskellDepends = [ base ];
   license = stdenv.lib.licenses.bsd3;
