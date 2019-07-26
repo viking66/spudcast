@@ -16,7 +16,7 @@ import Text.XML.Light ( Attr (..)
                       , Content (..)
                       , Element (..)
                       , QName (..)
-                      , showElement
+                      , ppElement
                       )
 
 import Spudcast.Types (ReadTags (..))
@@ -64,7 +64,7 @@ mkEmptyLiteralelemAttr n as = mkElemAttr n as' []
   where as' = map (uncurry mkAttr) as
 
 podcastItem :: ReadTags -> Text.Text -> UUID -> UTCTime -> Integer -> Text.Text
-podcastItem ReadTags{..} fn uuid ts len = Text.pack . showElement $ itemElem
+podcastItem ReadTags{..} fn uuid ts len = Text.pack . ppElement $ itemElem
   where
     titleElem = mkLiteralElem "title" title
     desc = "<p>" <> comment <> "</p>"
