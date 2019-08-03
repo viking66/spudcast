@@ -1,14 +1,12 @@
 module Spudcast.DB
-  ( PodcastDocument (..)
-  , createPodcast
+  ( createPodcast
   , getPodcast
   ) where
 
 import Control.Lens
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Time ( UTCTime
-                 , getCurrentTime
+import Data.Time ( getCurrentTime
                  )
 import Network.Google ( LogLevel (..)
                       , envLogger
@@ -32,20 +30,26 @@ import Network.Google.FireStore ( Document
                                 , documentFields
                                 , projectsDatabasesDocumentsCreateDocument
                                 , projectsDatabasesDocumentsGet
+                                , vBooleanValue
                                 , vStringValue
                                 , value
                                 )
 import System.IO (stdout)
 
--- TODO move this into Types
-data PodcastDocument = PodcastDocument
-  { podcastId :: Text
-  , podcastCreateDate :: UTCTime
-  , podcastGenre :: Text
-  , podcastHost :: Text
-  , podcastName :: Text
-  }
-  deriving Show
+import Spudcast.Types ( NewPodcast (..)
+                      , PodcastCreateDate (..)
+                      , PodcastDescription (..)
+                      , PodcastDetails (..)
+                      , PodcastEmail (..)
+                      , PodcastExplicit (..)
+                      , PodcastHost (..)
+                      , PodcastId (..)
+                      , PodcastImage (..)
+                      , PodcastLink (..)
+                      , PodcastTitle (..)
+                      , mkPodcastCategory
+                      , unPodcastCategory
+                      )
 
 newtype Root = Root { unRoot :: Text }
 newtype Collection = Collection { unCollection :: Text }
@@ -71,44 +75,68 @@ writeDocument r c d = do
   runResourceT . runGoogle env . send
     $ projectsDatabasesDocumentsCreateDocument (unRoot r) (unCollection c) d
 
+getValue :: (Ixed b)
+         => Getting (Maybe a) (IxValue b) (Maybe a)
+         -> b
+         -> Index b
+         -> Maybe a
+getValue l m k = (m ^@? iix k)^?(_Just._2) >>= view l
+
 getTextValue :: HashMap Text Value -> Text -> Maybe Text
-getTextValue m k = (m ^@? iix k)^?(_Just._2) >>= view vStringValue
+getTextValue = getValue vStringValue
+
+getBoolValue :: HashMap Text Value -> Text -> Maybe Bool
+getBoolValue = getValue vBooleanValue
 
 lastSlash :: Text -> Text
 lastSlash = Text.reverse . Text.takeWhile (/= '/') . Text.reverse
 
-toPodcastDocument :: Document -> Maybe PodcastDocument
-toPodcastDocument d =
+toPodcastDescription :: Document -> Maybe PodcastDetails
+toPodcastDescription d =
   d^.dFields^?(_Just.dfAddtional) >>= fromMap (d^.dName) (d^.dCreateTime)
     where
-      fromMap n t m = PodcastDocument
-        <$> fmap lastSlash n
-        <*> t
-        <*> getTextValue m "genre"
-        <*> getTextValue m "host"
-        <*> getTextValue m "name"
+      fromMap n t m = PodcastDetails
+        <$> (PodcastId . lastSlash <$> n)
+        <*> (PodcastCreateDate <$> t)
+        <*> (PodcastTitle <$> getTextValue m "title")
+        <*> (PodcastDescription <$> getTextValue m "description")
+        <*> (PodcastLink <$> getTextValue m "link")
+        <*> (PodcastHost <$> getTextValue m "host")
+        <*> (PodcastEmail <$> getTextValue m "email")
+        <*> (PodcastExplicit <$> getBoolValue m "explicit")
+        <*> (mkPodcastCategory <$> getTextValue m "category")
+        <*> (PodcastImage <$> getTextValue m "imageTitle" <*> getTextValue m "imageUrl")
 
 -- getPodcast "d0HLU6SHlnKlHeuV1DAB"
--- TODO replace Text with DocumentId
-getPodcast :: Text -> IO (Maybe PodcastDocument)
-getPodcast =
-  fmap toPodcastDocument . getDocument root podcastCollection . DocumentId
+getPodcast :: PodcastId -> IO (Maybe PodcastDetails)
+getPodcast = fmap toPodcastDescription
+  . getDocument root podcastCollection
+  . DocumentId
+  . unPodcastId
 
 mkStringValue :: Text -> Value
 mkStringValue v = value & vStringValue ?~ v
 
-mkPodcastHashMap :: Text -> Text -> Text -> HashMap Text Value
-mkPodcastHashMap n h g = mempty
-  & at "name" ?~ mkStringValue n
-  & at "host" ?~ mkStringValue h
-  & at "genre" ?~ mkStringValue g
+mkBooleanValue :: Bool -> Value
+mkBooleanValue v = value & vBooleanValue ?~ v
 
--- TODO use newtypes instead of Text
-createPodcast :: Text -> Text -> Text -> IO (Maybe PodcastDocument)
-createPodcast n h g = do
+mkPodcastHashMap :: NewPodcast -> HashMap Text Value
+mkPodcastHashMap NewPodcast{..} = mempty
+  & at "title" ?~ mkStringValue (unPodcastTitle title)
+  & at "description" ?~ mkStringValue (unPodcastDescription description)
+  & at "link" ?~ mkStringValue (unPodcastLink link)
+  & at "host" ?~ mkStringValue (unPodcastHost host)
+  & at "email" ?~ mkStringValue (unPodcastEmail email)
+  & at "explicit" ?~ mkBooleanValue (unPodcastExplicit explicit)
+  & at "category" ?~ mkStringValue (unPodcastCategory category)
+  & at "imageTitle" ?~ mkStringValue (imageTitle image)
+  & at "imageUrl" ?~ mkStringValue (imageUrl image)
+
+createPodcast :: NewPodcast -> IO (Maybe PodcastDetails)
+createPodcast x = do
   t <- Just <$> getCurrentTime
   let d = document
             & dUpdateTime .~ t
             & dCreateTime .~ t
-            & dFields ?~ documentFields (mkPodcastHashMap n h g)
-  toPodcastDocument <$> writeDocument root podcastCollection d
+            & dFields ?~ documentFields (mkPodcastHashMap x)
+  toPodcastDescription <$> writeDocument root podcastCollection d
