@@ -18,13 +18,17 @@ import Text.Read (readMaybe)
 import Spudcast.API ( API
                     , api
                     )
-import Spudcast.Handlers ( pong
+import Spudcast.Handlers ( getPodcast
+                         , pong
                          , uploadPodcast
                          )
+
+import Spudcast.Types (PodcastId (..))
 
 server :: Server API
 server = pong
     :<|> uploadPodcast
+    :<|> (getPodcast . PodcastId)
 
 app :: Application
 app = serve api server

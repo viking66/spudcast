@@ -1,5 +1,6 @@
 module Spudcast.Handlers
-  ( pong
+  ( getPodcast
+  , pong
   , uploadPodcast
   ) where
 
@@ -25,16 +26,21 @@ import System.Directory ( getFileSize
 import System.FilePath (replaceFileName)
 
 import Spudcast.API ( EpisodeDetails (..)
+                    , GetPodcastResponse
                     , PodcastEpisode
                     , getAudioPath
                     , getEpisodeDetails
+                    , toGetPodcastResponse
                     )
+import qualified Spudcast.DB as DB
 import Spudcast.Feed (podcastItem)
 import qualified Spudcast.Storage as Storage
 import Spudcast.Tags ( readTags
                      , writeTags
                      )
-import Spudcast.Types (WriteTags (..))
+import Spudcast.Types ( PodcastId
+                      , WriteTags (..)
+                      )
 
 pong :: Handler Text
 pong = pure "pong"
@@ -73,3 +79,8 @@ uploadPodcast pe = do
   size <- liftIO $ getFileSize nfp
   _ <- liftIO $ removeFile nfp
   pure $ podcastItem tags ufp u t size
+
+getPodcast :: PodcastId -> Handler (Maybe GetPodcastResponse)
+getPodcast p = do
+  mRes <- liftIO . DB.getPodcast $ p
+  pure (toGetPodcastResponse <$> mRes)
