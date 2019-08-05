@@ -8,12 +8,12 @@
 module Spudcast.API
   ( API
   , EpisodeDetails (..)
-  , GetPodcastResponse
   , PodcastEpisode
+  , PodcastResponse
   , api
   , getAudioPath
   , getEpisodeDetails
-  , toGetPodcastResponse
+  , toPodcastResponse
   ) where
 
 import Data.Aeson ( FromJSON
@@ -35,6 +35,7 @@ import Servant ( Capture
                , (:<|>)
                )
 import Servant.Multipart ( FromMultipart
+                         , Mem
                          , MultipartForm
                          , Tmp
                          , fdPayload
@@ -44,6 +45,15 @@ import Servant.Multipart ( FromMultipart
                          )
 
 import Spudcast.Types
+
+-- TODO add proper error handling and replace Maybe
+type API = "ping" :> Get '[JSON] Text
+      :<|> "podcast" :> "tots" :> MultipartForm Tmp PodcastEpisode :> Post '[PlainText] Text
+      :<|> "podcast" :> Capture "podcastId" Text :> Get '[JSON] (Maybe PodcastResponse)
+      :<|> "podcast" :> MultipartForm Mem CreatePodcast :> Post '[JSON] PodcastResponse
+
+api :: Proxy API
+api = Proxy
 
 data PodcastEpisode = PodcastEpisode EpisodeDetails FilePath
 
@@ -68,7 +78,7 @@ getEpisodeDetails (PodcastEpisode ed _) = ed
 getAudioPath :: PodcastEpisode -> FilePath
 getAudioPath (PodcastEpisode _ fp) = fp
 
-data GetPodcastResponse = GetPodcastResponse
+data PodcastResponse = PodcastResponse
   { podcastId :: Text
   , createDate :: UTCTime
   , title :: Text
@@ -82,8 +92,8 @@ data GetPodcastResponse = GetPodcastResponse
   }
   deriving (Show, Generic, ToJSON)
 
-toGetPodcastResponse :: PodcastDetails -> GetPodcastResponse
-toGetPodcastResponse PodcastDetails{..} = GetPodcastResponse
+toPodcastResponse :: PodcastDetails -> PodcastResponse
+toPodcastResponse PodcastDetails{..} = PodcastResponse
   { podcastId = unPodcastId pId
   , createDate = unPodcastCreateDate createDate
   , title = unPodcastTitle title
@@ -95,11 +105,3 @@ toGetPodcastResponse PodcastDetails{..} = GetPodcastResponse
   , category = unPodcastCategory category
   , imageUrl = unPodcastImageUrl imageUrl
   }
-
--- TODO add proper error handling and replace Maybe
-type API = "ping" :> Get '[JSON] Text
-      :<|> "podcast" :> MultipartForm Tmp PodcastEpisode :> Post '[PlainText] Text
-      :<|> "podcast" :> Capture "podcastId" Text :> Get '[JSON] (Maybe GetPodcastResponse)
-
-api :: Proxy API
-api = Proxy

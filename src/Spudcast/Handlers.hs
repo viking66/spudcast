@@ -26,11 +26,11 @@ import System.Directory ( getFileSize
 import System.FilePath (replaceFileName)
 
 import Spudcast.API ( EpisodeDetails (..)
-                    , GetPodcastResponse
+                    , PodcastResponse
                     , PodcastEpisode
                     , getAudioPath
                     , getEpisodeDetails
-                    , toGetPodcastResponse
+                    , toPodcastResponse
                     )
 import qualified Spudcast.DB as DB
 import Spudcast.Feed (podcastItem)
@@ -80,7 +80,7 @@ uploadPodcast pe = do
   _ <- liftIO $ removeFile nfp
   pure $ podcastItem tags ufp u t size
 
-getPodcast :: PodcastId -> Handler (Maybe GetPodcastResponse)
+getPodcast :: PodcastId -> Handler (Maybe PodcastResponse)
 getPodcast p = do
   mRes <- liftIO . DB.getPodcast $ p
-  pure (toGetPodcastResponse <$> mRes)
+  pure (toPodcastResponse <$> mRes)
