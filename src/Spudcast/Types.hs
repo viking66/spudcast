@@ -9,7 +9,7 @@ module Spudcast.Types
   , PodcastExplicit (..)
   , PodcastHost (..)
   , PodcastId (..)
-  , PodcastImage (..)
+  , PodcastImageUrl (..)
   , PodcastLink (..)
   , PodcastTitle (..)
   , ReadTags (..)
@@ -77,10 +77,7 @@ mkPodcastCategory :: Text -> PodcastCategory
 mkPodcastCategory "Comedy" = PodcastCategoryComedy
 mkPodcastCategory t = PodcastCategoryOther t
 
-data PodcastImage = PodcastImage
-  { imageTitle :: Text
-  , imageUrl :: Text
-  }
+newtype PodcastImageUrl = PodcastImageUrl { unPodcastImageUrl :: Text }
   deriving Show
 
 newtype PodcastCreateDate = PodcastCreateDate { unPodcastCreateDate :: UTCTime }
@@ -96,7 +93,7 @@ data PodcastDetails = PodcastDetails
   , email :: PodcastEmail
   , explicit :: PodcastExplicit
   , category :: PodcastCategory
-  , image :: PodcastImage
+  , imageUrl :: PodcastImageUrl
   }
   deriving Show
 
@@ -108,6 +105,6 @@ data NewPodcast = NewPodcast
   , email :: PodcastEmail
   , explicit :: PodcastExplicit
   , category :: PodcastCategory
-  , image :: PodcastImage
+  , imageUrl :: PodcastImageUrl
   }
   deriving Show

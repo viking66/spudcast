@@ -44,7 +44,7 @@ import Spudcast.Types ( NewPodcast (..)
                       , PodcastExplicit (..)
                       , PodcastHost (..)
                       , PodcastId (..)
-                      , PodcastImage (..)
+                      , PodcastImageUrl (..)
                       , PodcastLink (..)
                       , PodcastTitle (..)
                       , mkPodcastCategory
@@ -105,7 +105,7 @@ toPodcastDescription d =
         <*> (PodcastEmail <$> getTextValue m "email")
         <*> (PodcastExplicit <$> getBoolValue m "explicit")
         <*> (mkPodcastCategory <$> getTextValue m "category")
-        <*> (PodcastImage <$> getTextValue m "imageTitle" <*> getTextValue m "imageUrl")
+        <*> (PodcastImageUrl <$> getTextValue m "imageUrl")
 
 -- getPodcast "d0HLU6SHlnKlHeuV1DAB"
 getPodcast :: PodcastId -> IO (Maybe PodcastDetails)
@@ -129,8 +129,7 @@ mkPodcastHashMap NewPodcast{..} = mempty
   & at "email" ?~ mkStringValue (unPodcastEmail email)
   & at "explicit" ?~ mkBooleanValue (unPodcastExplicit explicit)
   & at "category" ?~ mkStringValue (unPodcastCategory category)
-  & at "imageTitle" ?~ mkStringValue (imageTitle image)
-  & at "imageUrl" ?~ mkStringValue (imageUrl image)
+  & at "imageUrl" ?~ mkStringValue (unPodcastImageUrl imageUrl)
 
 createPodcast :: NewPodcast -> IO (Maybe PodcastDetails)
 createPodcast x = do

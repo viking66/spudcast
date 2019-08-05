@@ -44,7 +44,6 @@ import Servant.Multipart ( FromMultipart
                          )
 
 import Spudcast.Types
-import qualified Spudcast.Types as Types
 
 data PodcastEpisode = PodcastEpisode EpisodeDetails FilePath
 
@@ -79,7 +78,6 @@ data GetPodcastResponse = GetPodcastResponse
   , email :: Text
   , explicit :: Bool
   , category :: Text
-  , imageTitle :: Text
   , imageUrl :: Text
   }
   deriving (Show, Generic, ToJSON)
@@ -95,8 +93,7 @@ toGetPodcastResponse PodcastDetails{..} = GetPodcastResponse
   , email = unPodcastEmail email
   , explicit = unPodcastExplicit explicit
   , category = unPodcastCategory category
-  , imageTitle = Types.imageTitle image
-  , imageUrl = Types.imageUrl image
+  , imageUrl = unPodcastImageUrl imageUrl
   }
 
 -- TODO add proper error handling and replace Maybe
