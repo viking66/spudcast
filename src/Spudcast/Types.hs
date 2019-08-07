@@ -1,21 +1,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 module Spudcast.Types
-  ( NewPodcast (..)
-  , PodcastCategory (..)
-  , PodcastCreateDate (..)
-  , PodcastDescription (..)
+  ( Podcast (..)
   , PodcastDetails (..)
-  , PodcastEmail (..)
-  , PodcastExplicit (..)
-  , PodcastHost (..)
-  , PodcastId (..)
-  , PodcastImageUrl (..)
-  , PodcastLink (..)
-  , PodcastTitle (..)
+  , PodcastId
   , ReadTags (..)
   , WriteTags (..)
-  , mkPodcastCategory
-  , unPodcastCategory
+  , getPodcastId
   ) where
 
 import Data.Text (Text)
@@ -44,67 +34,22 @@ data WriteTags = WriteTags
   }
   deriving Show
 
-newtype PodcastId = PodcastId { unPodcastId :: Text }
-  deriving Show
-
-newtype PodcastTitle = PodcastTitle { unPodcastTitle :: Text }
-  deriving Show
-
-newtype PodcastDescription = PodcastDescription { unPodcastDescription :: Text }
-  deriving Show
-
-newtype PodcastLink = PodcastLink { unPodcastLink :: Text }
-  deriving Show
-
-newtype PodcastHost = PodcastHost { unPodcastHost :: Text }
-  deriving Show
-
-newtype PodcastEmail = PodcastEmail { unPodcastEmail :: Text }
-  deriving Show
-
-newtype PodcastExplicit = PodcastExplicit { unPodcastExplicit :: Bool }
-  deriving Show
-
-data PodcastCategory = PodcastCategoryComedy
-                     | PodcastCategoryOther Text
-  deriving Show
-
-unPodcastCategory :: PodcastCategory -> Text
-unPodcastCategory PodcastCategoryComedy = "Comedy"
-unPodcastCategory (PodcastCategoryOther t) = t
-
-mkPodcastCategory :: Text -> PodcastCategory
-mkPodcastCategory "Comedy" = PodcastCategoryComedy
-mkPodcastCategory t = PodcastCategoryOther t
-
-newtype PodcastImageUrl = PodcastImageUrl { unPodcastImageUrl :: Text }
-  deriving Show
-
-newtype PodcastCreateDate = PodcastCreateDate { unPodcastCreateDate :: UTCTime }
-  deriving Show
+type PodcastId = Text
 
 data PodcastDetails = PodcastDetails
-  { pId :: PodcastId
-  , createDate :: PodcastCreateDate
-  , title :: PodcastTitle
-  , description :: PodcastDescription
-  , link :: PodcastLink
-  , host :: PodcastHost
-  , email :: PodcastEmail
-  , explicit :: PodcastExplicit
-  , category :: PodcastCategory
-  , imageUrl :: PodcastImageUrl
+  { createDate :: UTCTime
+  , title :: Text
+  , description :: Text
+  , link :: Text
+  , host :: Text
+  , email :: Text
+  , explicit :: Bool
+  , category :: Text
   }
   deriving Show
 
-data NewPodcast = NewPodcast
-  { title :: PodcastTitle
-  , description :: PodcastDescription
-  , link :: PodcastLink
-  , host :: PodcastHost
-  , email :: PodcastEmail
-  , explicit :: PodcastExplicit
-  , category :: PodcastCategory
-  , imageUrl :: PodcastImageUrl
-  }
+data Podcast = Podcast PodcastId PodcastDetails
   deriving Show
+
+getPodcastId :: Podcast -> PodcastId
+getPodcastId (Podcast pId _) = pId

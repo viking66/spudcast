@@ -1,9 +1,12 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 module Spudcast.Handlers
-  ( getPodcast
+  ( createPodcast
+  , getPodcast
   , pong
   , uploadPodcast
   ) where
 
+import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -25,32 +28,24 @@ import System.Directory ( getFileSize
                         )
 import System.FilePath (replaceFileName)
 
-import Spudcast.API ( EpisodeDetails (..)
-                    , PodcastResponse
-                    , PodcastEpisode
-                    , getAudioPath
-                    , getEpisodeDetails
-                    , toPodcastResponse
-                    )
+import Spudcast.API
 import qualified Spudcast.DB as DB
 import Spudcast.Feed (podcastItem)
 import qualified Spudcast.Storage as Storage
 import Spudcast.Tags ( readTags
                      , writeTags
                      )
-import Spudcast.Types ( PodcastId
-                      , WriteTags (..)
-                      )
+import Spudcast.Types
 
 pong :: Handler Text
 pong = pure "pong"
 
-getYear :: UTCTime -> Int
-getYear = fromInteger . getYear' . toGregorian . utctDay
-  where getYear' (y,_,_) = y
+uploadName :: UUID -> UTCTime -> Text
+uploadName u t = Text.intercalate "." [toText u, timePart, "mp3"]
+  where timePart = Text.pack $ formatTime defaultTimeLocale "%Y%m%d%H%M" t
 
-toWriteTags :: EpisodeDetails -> UTCTime -> WriteTags
-toWriteTags EpisodeDetails{..} t = WriteTags
+mkWriteTags :: EpisodeDetails' -> UTCTime -> WriteTags
+mkWriteTags EpisodeDetails'{..} t = WriteTags
   { title = epTitle
   , artist = host
   , album = podcastName
@@ -59,28 +54,54 @@ toWriteTags EpisodeDetails{..} t = WriteTags
   , genre = genre
   , comment = epDescription
   }
+    where
+      getYear = fromInteger . fst3 . toGregorian . utctDay
+      fst3 (a,_,_) = a
 
-uploadName :: UUID -> UTCTime -> Text
-uploadName u t = Text.intercalate "." [toText u, timePart, "mp3"]
-  where timePart = Text.pack $ formatTime defaultTimeLocale "%Y%m%d%H%M" t
-
-uploadPodcast :: PodcastEpisode -> Handler Text
-uploadPodcast pe = do
+uploadPodcast :: AddEpisodeReq -> Handler Text
+uploadPodcast AddEpisodeReq{..} = do
   u <- liftIO nextRandom
   t <- liftIO getCurrentTime
-  let ed = getEpisodeDetails pe
-      ofp = getAudioPath pe
-      ufp = uploadName u t
-      nfp = replaceFileName ofp (Text.unpack ufp)
-  _ <- liftIO $ renameFile ofp nfp
-  _ <- liftIO $ writeTags nfp (toWriteTags ed t)
-  _ <- liftIO $ Storage.write "www.stanleystots.com" nfp ufp
+  let ufp = uploadName u t
+      nfp = replaceFileName audioPath (Text.unpack ufp)
+  _ <- liftIO $ renameFile audioPath nfp
+  _ <- liftIO $ writeTags nfp (mkWriteTags episodeDetails t)
+  _ <- liftIO $ Storage.writePrivateObject "www.stanleystots.com" nfp ufp
   tags <- liftIO $ readTags nfp
   size <- liftIO $ getFileSize nfp
   _ <- liftIO $ removeFile nfp
   pure $ podcastItem tags ufp u t size
 
-getPodcast :: PodcastId -> Handler (Maybe PodcastResponse)
+getPodcast :: PodcastId -> Handler (Maybe PodcastResp)
 getPodcast p = do
-  mRes <- liftIO . DB.getPodcast $ p
-  pure (toPodcastResponse <$> mRes)
+  mPodcast <- liftIO $ DB.getPodcast p
+  pure $ mkPodcastResp <$> mPodcast
+
+createPodcast :: CreatePodcastReq -> Handler (Maybe PodcastResp)
+createPodcast CreatePodcastReq{..}  = do
+  let imagePath' = imagePath <> "." <> Text.unpack imageExt
+  _ <- liftIO $ renameFile imagePath imagePath'
+  mPodcast <- createPodcast' newPodcastDetails
+  _ <- maybe (pure ()) (writeImage imagePath' imageExt . getPodcastId) mPodcast
+  pure $ mkPodcastResp <$> mPodcast
+
+createPodcast' :: NewPodcastDetails -> Handler (Maybe Podcast)
+createPodcast' NewPodcastDetails{..} = do
+  t <- liftIO getCurrentTime
+  let pd = PodcastDetails
+        { createDate = t
+        , title = title
+        , description = description
+        , link = link
+        , host = host
+        , email = email
+        , explicit = explicit
+        , category = category
+        }
+  liftIO $ DB.createPodcast pd
+
+writeImage :: FilePath -> Text -> PodcastId -> Handler ()
+writeImage imagePath imageExt podcastId =
+  let storagePath = podcastId <> "/" <> "assets/cover." <> imageExt
+  in liftIO $ void $
+    Storage.writePublicPodcastObject imagePath storagePath

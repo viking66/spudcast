@@ -7,13 +7,13 @@
 
 module Spudcast.API
   ( API
-  , EpisodeDetails (..)
-  , PodcastEpisode
-  , PodcastResponse
+  , AddEpisodeReq (..)
+  , CreatePodcastReq (..)
+  , EpisodeDetails' (..)
+  , NewPodcastDetails (..)
+  , PodcastResp (..)
   , api
-  , getAudioPath
-  , getEpisodeDetails
-  , toPodcastResponse
+  , mkPodcastResp
   ) where
 
 import Data.Aeson ( FromJSON
@@ -23,8 +23,9 @@ import Data.Aeson ( FromJSON
 import Data.ByteString.Lazy (fromStrict)
 import Data.Proxy (Proxy (..))
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time (UTCTime)
+import Data.Time (UTCTime (..))
 import GHC.Generics (Generic)
 import Servant ( Capture
                , Get
@@ -32,12 +33,12 @@ import Servant ( Capture
                , PlainText
                , Post
                , (:>)
-               , (:<|>)
+               , (:<|>) (..)
                )
 import Servant.Multipart ( FromMultipart
-                         , Mem
                          , MultipartForm
                          , Tmp
+                         , fdFileCType
                          , fdPayload
                          , fromMultipart
                          , lookupFile
@@ -47,17 +48,20 @@ import Servant.Multipart ( FromMultipart
 import Spudcast.Types
 
 -- TODO add proper error handling and replace Maybe
-type API = "ping" :> Get '[JSON] Text
-      :<|> "podcast" :> "tots" :> MultipartForm Tmp PodcastEpisode :> Post '[PlainText] Text
-      :<|> "podcast" :> Capture "podcastId" Text :> Get '[JSON] (Maybe PodcastResponse)
-      :<|> "podcast" :> MultipartForm Mem CreatePodcast :> Post '[JSON] PodcastResponse
+type API = "ping" :> Get '[PlainText] Text
+      :<|> "podcast" :> "tots" :> MultipartForm Tmp AddEpisodeReq :> Post '[PlainText] Text
+      :<|> "podcast" :> Capture "podcastId" Text :> Get '[JSON] (Maybe PodcastResp)
+      :<|> "podcast" :> MultipartForm Tmp CreatePodcastReq :> Post '[JSON] (Maybe PodcastResp)
 
 api :: Proxy API
 api = Proxy
 
-data PodcastEpisode = PodcastEpisode EpisodeDetails FilePath
+data AddEpisodeReq = AddEpisodeReq
+  { episodeDetails :: EpisodeDetails'
+  , audioPath :: FilePath
+  }
 
-data EpisodeDetails = EpisodeDetails
+data EpisodeDetails' = EpisodeDetails'
   { podcastName :: Text
   , host :: Text
   , genre :: Text
@@ -67,18 +71,44 @@ data EpisodeDetails = EpisodeDetails
   }
   deriving (Generic, FromJSON, ToJSON)
 
-instance FromMultipart Tmp PodcastEpisode where
-  fromMultipart md = PodcastEpisode
+instance FromMultipart Tmp AddEpisodeReq where
+  fromMultipart md = AddEpisodeReq
     <$> (lookupInput "episodeDetails" md >>= decode . fromStrict . encodeUtf8)
     <*> (fdPayload <$> lookupFile "audio" md)
 
-getEpisodeDetails :: PodcastEpisode -> EpisodeDetails
-getEpisodeDetails (PodcastEpisode ed _) = ed
+data CreatePodcastReq = CreatePodcastReq
+  { newPodcastDetails :: NewPodcastDetails
+  , imagePath :: FilePath
+  , imageExt :: Text
+  }
 
-getAudioPath :: PodcastEpisode -> FilePath
-getAudioPath (PodcastEpisode _ fp) = fp
+data NewPodcastDetails = NewPodcastDetails
+  { title :: Text
+  , description :: Text
+  , link :: Text
+  , host :: Text
+  , email :: Text
+  , explicit :: Bool
+  , category :: Text
+  }
+  deriving (Generic, FromJSON)
 
-data PodcastResponse = PodcastResponse
+fileTypeExt :: Text -> Maybe Text
+fileTypeExt = getExt . fileTypeParts
+  where
+    fileTypeParts = fmap (Text.drop 1) . Text.span (/= '/')
+    getExt (_, "") = Nothing
+    getExt ("image", ext) = Just ext
+    getExt _ = Nothing
+
+instance FromMultipart Tmp CreatePodcastReq where
+  fromMultipart md = CreatePodcastReq
+    <$> (lookupInput "newPodcastDetails" md >>= decode . fromStrict . encodeUtf8)
+    <*> (fdPayload <$> mdImage)
+    <*> (mdImage >>= fileTypeExt . fdFileCType)
+      where mdImage = lookupFile "image" md
+
+data PodcastResp = PodcastResp
   { podcastId :: Text
   , createDate :: UTCTime
   , title :: Text
@@ -88,20 +118,18 @@ data PodcastResponse = PodcastResponse
   , email :: Text
   , explicit :: Bool
   , category :: Text
-  , imageUrl :: Text
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Generic, ToJSON)
 
-toPodcastResponse :: PodcastDetails -> PodcastResponse
-toPodcastResponse PodcastDetails{..} = PodcastResponse
-  { podcastId = unPodcastId pId
-  , createDate = unPodcastCreateDate createDate
-  , title = unPodcastTitle title
-  , description = unPodcastDescription description
-  , link = unPodcastLink link
-  , host = unPodcastHost host
-  , email = unPodcastEmail email
-  , explicit = unPodcastExplicit explicit
-  , category = unPodcastCategory category
-  , imageUrl = unPodcastImageUrl imageUrl
+mkPodcastResp :: Podcast -> PodcastResp
+mkPodcastResp (Podcast pId PodcastDetails{..}) = PodcastResp
+  { podcastId = pId
+  , createDate = createDate
+  , title = title
+  , description = description
+  , link = link
+  , host = host
+  , email = email
+  , explicit = explicit
+  , category = category
   }

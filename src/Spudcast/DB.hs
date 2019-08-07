@@ -6,8 +6,6 @@ module Spudcast.DB
 import Control.Lens
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Time ( getCurrentTime
-                 )
 import Network.Google ( LogLevel (..)
                       , envLogger
                       , envScopes
@@ -36,20 +34,7 @@ import Network.Google.FireStore ( Document
                                 )
 import System.IO (stdout)
 
-import Spudcast.Types ( NewPodcast (..)
-                      , PodcastCreateDate (..)
-                      , PodcastDescription (..)
-                      , PodcastDetails (..)
-                      , PodcastEmail (..)
-                      , PodcastExplicit (..)
-                      , PodcastHost (..)
-                      , PodcastId (..)
-                      , PodcastImageUrl (..)
-                      , PodcastLink (..)
-                      , PodcastTitle (..)
-                      , mkPodcastCategory
-                      , unPodcastCategory
-                      )
+import Spudcast.Types
 
 newtype Root = Root { unRoot :: Text }
 newtype Collection = Collection { unCollection :: Text }
@@ -61,19 +46,23 @@ root = Root "projects/stanleystots/databases/(default)/documents"
 podcastCollection :: Collection
 podcastCollection = Collection "podcasts"
 
+getResourceName :: Root -> Collection -> DocumentId -> Text
+getResourceName r c d =
+  unRoot r <> "/" <> unCollection c <> "/" <> unDocumentId d
+
 getDocument :: Root -> Collection -> DocumentId -> IO Document
 getDocument r c d = do
   lgr <- newLogger Debug stdout
   env <- newEnv <&> (envLogger .~ lgr) . (envScopes .~ datastoreScope)
-  let req = unRoot r <> "/" <> unCollection c <> "/" <> unDocumentId d
-  runResourceT . runGoogle env . send $ projectsDatabasesDocumentsGet req
+  runResourceT . runGoogle env . send $
+    projectsDatabasesDocumentsGet (getResourceName r c d)
 
-writeDocument :: Root -> Collection -> Document -> IO Document
-writeDocument r c d = do
+createDocument :: Root -> Collection -> Document -> IO Document
+createDocument r c d = do
   lgr <- newLogger Debug stdout
   env <- newEnv <&> (envLogger .~ lgr) . (envScopes .~ datastoreScope)
-  runResourceT . runGoogle env . send
-    $ projectsDatabasesDocumentsCreateDocument (unRoot r) (unCollection c) d
+  runResourceT . runGoogle env . send $
+    projectsDatabasesDocumentsCreateDocument (unRoot r) (unCollection c) d
 
 getValue :: (Ixed b)
          => Getting (Maybe a) (IxValue b) (Maybe a)
@@ -88,31 +77,31 @@ getTextValue = getValue vStringValue
 getBoolValue :: HashMap Text Value -> Text -> Maybe Bool
 getBoolValue = getValue vBooleanValue
 
-lastSlash :: Text -> Text
-lastSlash = Text.reverse . Text.takeWhile (/= '/') . Text.reverse
+getDocumentId :: Document -> Maybe Text
+getDocumentId = fmap lastSlash . view dName
+  where
+    lastSlash = Text.reverse . Text.takeWhile (/= '/') . Text.reverse
 
-toPodcastDescription :: Document -> Maybe PodcastDetails
+toPodcastDescription :: Document -> Maybe Podcast
 toPodcastDescription d =
-  d^.dFields^?(_Just.dfAddtional) >>= fromMap (d^.dName) (d^.dCreateTime)
+  d^.dFields^?(_Just.dfAddtional) >>= mkPodcast (getDocumentId d) (d^.dCreateTime)
     where
-      fromMap n t m = PodcastDetails
-        <$> (PodcastId . lastSlash <$> n)
-        <*> (PodcastCreateDate <$> t)
-        <*> (PodcastTitle <$> getTextValue m "title")
-        <*> (PodcastDescription <$> getTextValue m "description")
-        <*> (PodcastLink <$> getTextValue m "link")
-        <*> (PodcastHost <$> getTextValue m "host")
-        <*> (PodcastEmail <$> getTextValue m "email")
-        <*> (PodcastExplicit <$> getBoolValue m "explicit")
-        <*> (mkPodcastCategory <$> getTextValue m "category")
-        <*> (PodcastImageUrl <$> getTextValue m "imageUrl")
+      mkPodcast pId t m = Podcast <$> pId <*> mkPodcastDetails t m
+      mkPodcastDetails t m = PodcastDetails
+        <$> t
+        <*> getTextValue m "title"
+        <*> getTextValue m "description"
+        <*> getTextValue m "link"
+        <*> getTextValue m "host"
+        <*> getTextValue m "email"
+        <*> getBoolValue m "explicit"
+        <*> getTextValue m "category"
 
 -- getPodcast "d0HLU6SHlnKlHeuV1DAB"
-getPodcast :: PodcastId -> IO (Maybe PodcastDetails)
+getPodcast :: PodcastId -> IO (Maybe Podcast)
 getPodcast = fmap toPodcastDescription
   . getDocument root podcastCollection
   . DocumentId
-  . unPodcastId
 
 mkStringValue :: Text -> Value
 mkStringValue v = value & vStringValue ?~ v
@@ -120,22 +109,20 @@ mkStringValue v = value & vStringValue ?~ v
 mkBooleanValue :: Bool -> Value
 mkBooleanValue v = value & vBooleanValue ?~ v
 
-mkPodcastHashMap :: NewPodcast -> HashMap Text Value
-mkPodcastHashMap NewPodcast{..} = mempty
-  & at "title" ?~ mkStringValue (unPodcastTitle title)
-  & at "description" ?~ mkStringValue (unPodcastDescription description)
-  & at "link" ?~ mkStringValue (unPodcastLink link)
-  & at "host" ?~ mkStringValue (unPodcastHost host)
-  & at "email" ?~ mkStringValue (unPodcastEmail email)
-  & at "explicit" ?~ mkBooleanValue (unPodcastExplicit explicit)
-  & at "category" ?~ mkStringValue (unPodcastCategory category)
-  & at "imageUrl" ?~ mkStringValue (unPodcastImageUrl imageUrl)
+mkPodcastHashMap :: PodcastDetails -> HashMap Text Value
+mkPodcastHashMap PodcastDetails{..} = mempty
+  & at "title" ?~ mkStringValue title
+  & at "description" ?~ mkStringValue description
+  & at "link" ?~ mkStringValue link
+  & at "host" ?~ mkStringValue host
+  & at "email" ?~ mkStringValue email
+  & at "explicit" ?~ mkBooleanValue explicit
+  & at "category" ?~ mkStringValue category
 
-createPodcast :: NewPodcast -> IO (Maybe PodcastDetails)
-createPodcast x = do
-  t <- Just <$> getCurrentTime
+createPodcast :: PodcastDetails -> IO (Maybe Podcast)
+createPodcast p@PodcastDetails{..} = do
   let d = document
-            & dUpdateTime .~ t
-            & dCreateTime .~ t
-            & dFields ?~ documentFields (mkPodcastHashMap x)
-  toPodcastDescription <$> writeDocument root podcastCollection d
+            & dUpdateTime ?~ createDate
+            & dCreateTime ?~ createDate
+            & dFields ?~ documentFields (mkPodcastHashMap p)
+  toPodcastDescription <$> createDocument root podcastCollection d
