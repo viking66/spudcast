@@ -3,17 +3,16 @@ module Spudcast.Handlers
   ( createPodcast
   , getPodcast
   , pong
-  , uploadPodcast
+  , savePodcast
+  , rambutan
   ) where
 
+import Control.Lens
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Time.Calendar (toGregorian)
-import Data.Time.Clock ( UTCTime (..)
-                       , getCurrentTime
-                       )
+import Data.Time.Clock (UTCTime (..))
 import Data.Time.Format ( defaultTimeLocale
                         , formatTime
                         )
@@ -28,7 +27,6 @@ import System.Directory ( getFileSize
                         )
 import System.FilePath (replaceFileName)
 
-import Spudcast.API
 import qualified Spudcast.DB as DB
 import Spudcast.Feed (podcastItem)
 import qualified Spudcast.Storage as Storage
@@ -44,64 +42,37 @@ uploadName :: UUID -> UTCTime -> Text
 uploadName u t = Text.intercalate "." [toText u, timePart, "mp3"]
   where timePart = Text.pack $ formatTime defaultTimeLocale "%Y%m%d%H%M" t
 
-mkWriteTags :: EpisodeDetails' -> UTCTime -> WriteTags
-mkWriteTags EpisodeDetails'{..} t = WriteTags
-  { title = epTitle
-  , artist = host
-  , album = podcastName
-  , year = getYear t
-  , trackNumber = epNumber
-  , genre = genre
-  , comment = epDescription
-  }
-    where
-      getYear = fromInteger . fst3 . toGregorian . utctDay
-      fst3 (a,_,_) = a
-
-uploadPodcast :: AddEpisodeReq -> Handler Text
-uploadPodcast AddEpisodeReq{..} = do
+savePodcast :: FilePath -> WriteTags -> UTCTime -> Handler Text
+savePodcast audioPath tags t = do
   u <- liftIO nextRandom
-  t <- liftIO getCurrentTime
   let ufp = uploadName u t
       nfp = replaceFileName audioPath (Text.unpack ufp)
   _ <- liftIO $ renameFile audioPath nfp
-  _ <- liftIO $ writeTags nfp (mkWriteTags episodeDetails t)
+  _ <- liftIO $ writeTags nfp tags
   _ <- liftIO $ Storage.writePrivateObject "www.stanleystots.com" nfp ufp
   tags <- liftIO $ readTags nfp
   size <- liftIO $ getFileSize nfp
   _ <- liftIO $ removeFile nfp
   pure $ podcastItem tags ufp u t size
 
-getPodcast :: PodcastId -> Handler (Maybe PodcastResp)
-getPodcast p = do
-  mPodcast <- liftIO $ DB.getPodcast p
-  pure $ mkPodcastResp <$> mPodcast
+getPodcast :: PodcastId -> Handler (Maybe Podcast)
+getPodcast p = liftIO $ DB.getPodcast p
 
-createPodcast :: CreatePodcastReq -> Handler (Maybe PodcastResp)
-createPodcast CreatePodcastReq{..}  = do
+createPodcast :: FilePath -> Text -> PodcastDetails -> Handler (Maybe Podcast)
+createPodcast imagePath imageExt pd = do
   let imagePath' = imagePath <> "." <> Text.unpack imageExt
   _ <- liftIO $ renameFile imagePath imagePath'
-  mPodcast <- createPodcast' newPodcastDetails
-  _ <- maybe (pure ()) (writeImage imagePath' imageExt . getPodcastId) mPodcast
-  pure $ mkPodcastResp <$> mPodcast
-
-createPodcast' :: NewPodcastDetails -> Handler (Maybe Podcast)
-createPodcast' NewPodcastDetails{..} = do
-  t <- liftIO getCurrentTime
-  let pd = PodcastDetails
-        { createDate = t
-        , title = title
-        , description = description
-        , link = link
-        , host = host
-        , email = email
-        , explicit = explicit
-        , category = category
-        }
-  liftIO $ DB.createPodcast pd
+  mPodcast <- liftIO $ DB.createPodcast pd
+  _ <- maybe (pure ()) (writeImage imagePath' imageExt . (^.podcastId)) mPodcast
+  pure mPodcast
 
 writeImage :: FilePath -> Text -> PodcastId -> Handler ()
 writeImage imagePath imageExt podcastId =
   let storagePath = podcastId <> "/" <> "assets/cover." <> imageExt
   in liftIO $ void $
     Storage.writePublicPodcastObject imagePath storagePath
+
+rambutan :: PodcastId -> Handler Text
+rambutan p = do
+  mPodcast <- liftIO $ DB.getPodcast p
+  pure $ maybe "No podcast found" (Text.pack . show) mPodcast

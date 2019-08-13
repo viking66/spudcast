@@ -1,55 +1,56 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-module Spudcast.Types
-  ( Podcast (..)
-  , PodcastDetails (..)
-  , PodcastId
-  , ReadTags (..)
-  , WriteTags (..)
-  , getPodcastId
-  ) where
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE TemplateHaskell #-}
+module Spudcast.Types where
 
+import Control.Lens
 import Data.Text (Text)
 import Data.Time (UTCTime)
 
 data ReadTags = ReadTags
-  { title :: Text
-  , artist :: Text
-  , album :: Text
-  , year :: Maybe Int
-  , trackNumber :: Maybe Int
-  , genre :: Text
-  , comment :: Text
-  , duration :: Int
+  { _title :: Text
+  , _artist :: Text
+  , _album :: Text
+  , _year :: Maybe Int
+  , _trackNumber :: Maybe Int
+  , _genre :: Text
+  , _comment :: Text
+  , _duration :: Int
   }
   deriving Show
+makeFieldsNoPrefix ''ReadTags
 
 data WriteTags = WriteTags
-  { title :: Text
-  , artist :: Text
-  , album :: Text
-  , year :: Int
-  , trackNumber :: Int
-  , genre :: Text
-  , comment :: Text
+  { _title :: Text
+  , _artist :: Text
+  , _album :: Text
+  , _year :: Int
+  , _trackNumber :: Int
+  , _genre :: Text
+  , _comment :: Text
   }
   deriving Show
+makeFieldsNoPrefix ''WriteTags
 
 type PodcastId = Text
 
 data PodcastDetails = PodcastDetails
-  { createDate :: UTCTime
-  , title :: Text
-  , description :: Text
-  , link :: Text
-  , host :: Text
-  , email :: Text
-  , explicit :: Bool
-  , category :: Text
+  { _createDate :: UTCTime
+  , _title :: Text
+  , _description :: Text
+  , _link :: Text
+  , _host :: Text
+  , _email :: Text
+  , _explicit :: Bool
+  , _category :: Text
   }
   deriving Show
+makeFieldsNoPrefix ''PodcastDetails
 
-data Podcast = Podcast PodcastId PodcastDetails
+data Podcast = Podcast
+  { _podcastId :: PodcastId
+  , _podcastDetails :: PodcastDetails
+  }
   deriving Show
-
-getPodcastId :: Podcast -> PodcastId
-getPodcastId (Podcast pId _) = pId
+makeFieldsNoPrefix ''Podcast

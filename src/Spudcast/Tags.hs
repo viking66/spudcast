@@ -1,35 +1,38 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Spudcast.Tags
   ( readTags
   , writeTags
   ) where
 
+import Control.Lens
 import Sound.HTagLib
 
-import Spudcast.Types ( ReadTags (..)
-                      , WriteTags (..)
-                      )
+import Spudcast.Types
 
 data AudioTags = AudioTags
-  { title :: Title
-  , artist :: Artist
-  , album :: Album
-  , year :: Maybe Year
-  , trackNumber :: Maybe TrackNumber
-  , genre :: Genre
-  , comment :: Comment
-  , duration :: Duration
+  { _title :: Title
+  , _artist :: Artist
+  , _album :: Album
+  , _year :: Maybe Year
+  , _trackNumber :: Maybe TrackNumber
+  , _genre :: Genre
+  , _comment :: Comment
+  , _duration :: Duration
   }
+makeFieldsNoPrefix ''AudioTags
 
 toReadTags :: AudioTags -> ReadTags
-toReadTags AudioTags{..} = ReadTags
-  { title = unTitle title
-  , artist = unArtist artist
-  , album = unAlbum album
-  , year = unYear <$> year
-  , trackNumber = unTrackNumber <$> trackNumber
-  , genre = unGenre genre
-  , comment = unComment comment
-  , duration = unDuration duration
+toReadTags tags = ReadTags
+  { _title = unTitle (tags^.title)
+  , _artist = unArtist (tags^.artist)
+  , _album = unAlbum (tags^.album)
+  , _year = unYear <$> (tags^.year)
+  , _trackNumber = unTrackNumber <$> (tags^.trackNumber)
+  , _genre = unGenre (tags^.genre)
+  , _comment = unComment (tags^.comment)
+  , _duration = unDuration (tags^.duration)
   }
 
 audioTagGetter :: TagGetter AudioTags
@@ -47,11 +50,11 @@ readTags :: FilePath -> IO ReadTags
 readTags fp = toReadTags <$> getTags fp audioTagGetter
 
 writeTags :: FilePath -> WriteTags -> IO ()
-writeTags fp WriteTags{..} = setTags fp Nothing $
-     titleSetter (mkTitle title)
-  <> artistSetter (mkArtist artist)
-  <> albumSetter (mkAlbum album)
-  <> yearSetter (mkYear year)
-  <> trackNumberSetter (mkTrackNumber trackNumber)
-  <> genreSetter (mkGenre genre)
-  <> commentSetter (mkComment comment)
+writeTags fp tags = setTags fp Nothing $
+     titleSetter (mkTitle $ tags^.title)
+  <> artistSetter (mkArtist $ tags^.artist)
+  <> albumSetter (mkAlbum $ tags^.album)
+  <> yearSetter (mkYear $ tags^.year)
+  <> trackNumberSetter (mkTrackNumber $ tags^.trackNumber)
+  <> genreSetter (mkGenre $ tags^.genre)
+  <> commentSetter (mkComment $ tags^.comment)

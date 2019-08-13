@@ -2,6 +2,7 @@ module Spudcast.Feed
   ( podcastItem
   ) where
 
+import Control.Lens
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import Data.Time.Clock (UTCTime)
@@ -10,16 +11,9 @@ import Data.Time.Format ( defaultTimeLocale
                         )
 import Data.UUID (UUID)
 import qualified Data.UUID as UUID
-import Text.XML.Light ( Attr (..)
-                      , CData (..)
-                      , CDataKind (..)
-                      , Content (..)
-                      , Element (..)
-                      , QName (..)
-                      , ppElement
-                      )
+import Text.XML.Light
 
-import Spudcast.Types (ReadTags (..))
+import Spudcast.Types
 
 formatDuration :: Int -> Text.Text
 formatDuration n = Text.intercalate ":" $ map toText xs
@@ -64,22 +58,22 @@ mkEmptyLiteralelemAttr n as = mkElemAttr n as' []
   where as' = map (uncurry mkAttr) as
 
 podcastItem :: ReadTags -> Text.Text -> UUID -> UTCTime -> Integer -> Text.Text
-podcastItem ReadTags{..} fn uuid ts len = Text.pack . ppElement $ itemElem
+podcastItem tags fn uuid ts len = Text.pack . ppElement $ itemElem
   where
-    titleElem = mkLiteralElem "title" title
-    desc = "<p>" <> comment <> "</p>"
+    titleElem = mkLiteralElem "title" (tags^.title)
+    desc = "<p>" <> (tags^.comment) <> "</p>"
     descElem = mkElem "description" [cdataContent desc]
-    iTitleElem = mkLiteralElem "itunes:title" title
+    iTitleElem = mkLiteralElem "itunes:title" (tags^.title)
     iTypeElem = mkLiteralElem "itunes:episodeType" "full"
-    ep = Text.pack . show . fromMaybe 0 $ trackNumber
+    ep = Text.pack . show . fromMaybe 0 $ (tags^.trackNumber)
     iEpElem = mkLiteralElem "itunes:episode" ep
-    iSummaryElem = mkLiteralElem "itunes:summary" comment
+    iSummaryElem = mkLiteralElem "itunes:summary" (tags^.comment)
     guidElem = mkLiteralelemAttr "guid" [("isPermaLink", "false")] (UUID.toText uuid)
     pubDate = Text.pack . formatTime defaultTimeLocale "%a, %d %b %Y %T %z" $ ts
     pubDateElem = mkLiteralElem "pubDate" pubDate
     iExplicitElem = mkLiteralElem "itunes:explicit" "yes"
     iImageElem = mkEmptyLiteralelemAttr "itunes:image" [("href", "http://www.stanleystots.com/stanleys_tots.jpg")]
-    iDurationElem = mkLiteralElem "itunes:duration" (formatDuration duration)
+    iDurationElem = mkLiteralElem "itunes:duration" (formatDuration (tags^.duration))
     url = "http://www.stanleystots.com/" <> fn
     length = Text.pack . show $ len
     enclosureElem = mkEmptyLiteralelemAttr "enclosure" [("url", url), ("type", "audio/mpeg"), ("length", length)]

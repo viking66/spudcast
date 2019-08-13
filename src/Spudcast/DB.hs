@@ -110,19 +110,19 @@ mkBooleanValue :: Bool -> Value
 mkBooleanValue v = value & vBooleanValue ?~ v
 
 mkPodcastHashMap :: PodcastDetails -> HashMap Text Value
-mkPodcastHashMap PodcastDetails{..} = mempty
-  & at "title" ?~ mkStringValue title
-  & at "description" ?~ mkStringValue description
-  & at "link" ?~ mkStringValue link
-  & at "host" ?~ mkStringValue host
-  & at "email" ?~ mkStringValue email
-  & at "explicit" ?~ mkBooleanValue explicit
-  & at "category" ?~ mkStringValue category
+mkPodcastHashMap p = mempty
+  & at "title" ?~ mkStringValue (p^.title)
+  & at "description" ?~ mkStringValue (p^.description)
+  & at "link" ?~ mkStringValue (p^.link)
+  & at "host" ?~ mkStringValue (p^.host)
+  & at "email" ?~ mkStringValue (p^.email)
+  & at "explicit" ?~ mkBooleanValue (p^.explicit)
+  & at "category" ?~ mkStringValue (p^.category)
 
 createPodcast :: PodcastDetails -> IO (Maybe Podcast)
-createPodcast p@PodcastDetails{..} = do
+createPodcast p = do
   let d = document
-            & dUpdateTime ?~ createDate
-            & dCreateTime ?~ createDate
+            & dUpdateTime ?~ (p^.createDate)
+            & dCreateTime ?~ (p^.createDate)
             & dFields ?~ documentFields (mkPodcastHashMap p)
   toPodcastDescription <$> createDocument root podcastCollection d
