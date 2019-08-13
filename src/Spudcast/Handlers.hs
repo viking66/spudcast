@@ -3,8 +3,7 @@ module Spudcast.Handlers
   ( createPodcast
   , getPodcast
   , pong
-  , savePodcast
-  , rambutan
+  , writeEpisode
   ) where
 
 import Control.Lens
@@ -12,6 +11,7 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import qualified Data.Text as Text
+import Data.Time.Calendar (toGregorian)
 import Data.Time.Clock (UTCTime (..))
 import Data.Time.Format ( defaultTimeLocale
                         , formatTime
@@ -42,19 +42,6 @@ uploadName :: UUID -> UTCTime -> Text
 uploadName u t = Text.intercalate "." [toText u, timePart, "mp3"]
   where timePart = Text.pack $ formatTime defaultTimeLocale "%Y%m%d%H%M" t
 
-savePodcast :: FilePath -> WriteTags -> UTCTime -> Handler Text
-savePodcast audioPath tags t = do
-  u <- liftIO nextRandom
-  let ufp = uploadName u t
-      nfp = replaceFileName audioPath (Text.unpack ufp)
-  _ <- liftIO $ renameFile audioPath nfp
-  _ <- liftIO $ writeTags nfp tags
-  _ <- liftIO $ Storage.writePrivateObject "www.stanleystots.com" nfp ufp
-  tags <- liftIO $ readTags nfp
-  size <- liftIO $ getFileSize nfp
-  _ <- liftIO $ removeFile nfp
-  pure $ podcastItem tags ufp u t size
-
 getPodcast :: PodcastId -> Handler (Maybe Podcast)
 getPodcast p = liftIO $ DB.getPodcast p
 
@@ -72,7 +59,37 @@ writeImage imagePath imageExt podcastId =
   in liftIO $ void $
     Storage.writePublicPodcastObject imagePath storagePath
 
-rambutan :: PodcastId -> Handler Text
-rambutan p = do
-  mPodcast <- liftIO $ DB.getPodcast p
-  pure $ maybe "No podcast found" (Text.pack . show) mPodcast
+mkWriteTags :: Podcast -> NewEpisodeDetails -> UTCTime -> WriteTags
+mkWriteTags p ned t =
+  let getYear = fromInteger . fst3 . toGregorian . utctDay
+      fst3 (a,_,_) = a
+  in WriteTags
+    { _title = ned^.title
+    , _artist = p^.podcastDetails.host
+    , _album = p^.podcastDetails.title
+    , _year = getYear t
+    , _trackNumber = ned^.number
+    , _genre = p^.podcastDetails.category
+    , _comment = ned^.description
+    }
+
+writeEpisode :: PodcastId -> FilePath -> NewEpisodeDetails -> Handler Text
+writeEpisode p audioPath ned = do
+  u <- liftIO nextRandom
+  mPodcast <- getPodcast p
+  let t = ned^.createDate
+      remoteName = uploadName u t
+      localName = replaceFileName audioPath (Text.unpack remoteName)
+  case mPodcast of
+    Nothing -> pure "Something went wrong"
+    Just podcast -> do
+      let tags = mkWriteTags podcast ned t
+      tags' <- liftIO $ do
+        _ <- renameFile audioPath localName
+        _ <- writeTags localName tags
+        _ <- liftIO $
+          Storage.writePrivateObject "www.stanleystots.com" localName remoteName
+        readTags localName
+      size <- liftIO $ getFileSize localName
+      _ <- liftIO $ removeFile localName
+      pure $ podcastItem tags' remoteName u t size

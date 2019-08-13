@@ -20,17 +20,11 @@ import qualified Spudcast.Handlers as Handlers
 
 server :: Server API
 server = Handlers.pong
-    :<|> savePodcast
     :<|> getPodcast
     :<|> createPodcast
-    :<|> rambutan
+    :<|> writeEpisode
 
   where
-    savePodcast :: NewEpisodeReq -> Handler Text
-    savePodcast req = do
-      t <- liftIO getCurrentTime
-      Handlers.savePodcast (req^.audioPath) (reqToWriteTags req t) t
-
     getPodcast :: Text -> Handler (Maybe PodcastResp)
     getPodcast = fmap (podcastToResp <$>) . Handlers.getPodcast
 
@@ -43,8 +37,10 @@ server = Handlers.pong
         (reqToPodcastDetails req t)
       pure $ podcastToResp <$> mp
 
-    rambutan :: Text -> Handler Text
-    rambutan = Handlers.rambutan
+    writeEpisode :: Text -> NewEpisodeReq -> Handler Text
+    writeEpisode pId req = do
+      t <- liftIO getCurrentTime
+      Handlers.writeEpisode pId (req^.audioPath) (reqToNewEpisodeDetails req t)
 
 app :: Application
 app = serve api server

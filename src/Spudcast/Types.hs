@@ -54,3 +54,12 @@ data Podcast = Podcast
   }
   deriving Show
 makeFieldsNoPrefix ''Podcast
+
+data NewEpisodeDetails = NewEpisodeDetails
+  { _createDate :: UTCTime
+  , _title :: Text
+  , _description :: Text
+  , _number :: Int
+  }
+  deriving Show
+makeFieldsNoPrefix ''NewEpisodeDetails

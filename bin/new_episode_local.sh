@@ -1,11 +1,9 @@
 #!/usr/bin/env sh
 
-PODCAST="Stanley's Tots"
-HOST="Stanley Randall"
-GENRE="Comedy"
+PODCAST="DT68WjPHZReJ8BUfYEHl"
 
 TITLE="FOO"
-EPISODE=666
+NUMBER=666
 DESCRIPTION="BAR"
 
-curl localhost:8080/podcast/tots -F episodeDetails="{\"podcastName\": \"$PODCAST\", \"host\": \"$HOST\", \"genre\": \"$GENRE\", \"epTitle\": \"$TITLE\", \"epNumber\": $EPISODE, \"epDescription\": \"$DESCRIPTION\"};type=application/json" -F audio=@"$1"
+curl localhost:8080/podcast/$PODCAST -F episodeDetails="{\"title\": \"$TITLE\", \"number\": $NUMBER, \"description\": \"$DESCRIPTION\"};type=application/json" -F audio=@"$1"
