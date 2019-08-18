@@ -8,6 +8,13 @@ import Control.Lens
 import Data.Text (Text)
 import Data.Time (UTCTime)
 
+data AppError
+  = BadPodcastId
+  | DBWriteFailed
+  deriving Show
+
+newtype Env = Env { spudcastBucket :: Text }
+
 data ReadTags = ReadTags
   { _title :: Text
   , _artist :: Text

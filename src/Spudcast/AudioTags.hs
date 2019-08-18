@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
-module Spudcast.Tags
+module Spudcast.AudioTags
   ( readTags
   , writeTags
   ) where

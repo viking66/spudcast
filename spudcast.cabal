@@ -20,12 +20,14 @@ library
   exposed-modules:     Spudcast.API
                      , Spudcast.API.Routes
                      , Spudcast.API.Types
-                     , Spudcast.DB
+                     , Spudcast.AppM
+                     , Spudcast.AudioTags
+                     , Spudcast.Effects
                      , Spudcast.Feed
+                     , Spudcast.GCP.DB
+                     , Spudcast.GCP.Storage
                      , Spudcast.Handlers
                      , Spudcast.Server
-                     , Spudcast.Storage
-                     , Spudcast.Tags
                      , Spudcast.Types
   -- other-modules:
   -- other-extensions:
@@ -40,6 +42,7 @@ library
                      , gogol-storage
                      , htaglib
                      , lens
+                     , mtl
                      , servant-multipart
                      , servant-server
                      , text

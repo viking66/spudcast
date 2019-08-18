@@ -1,5 +1,5 @@
 { mkDerivation, aeson, base, bytestring, directory, filepath, gogol
-, gogol-core, gogol-firestore, gogol-storage, htaglib, lens
+, gogol-core, gogol-firestore, gogol-storage, htaglib, lens, mtl
 , servant-multipart, servant-server, stdenv, text, time, uuid, wai
 , wai-extra, warp, xml
 }:
@@ -11,7 +11,7 @@ mkDerivation {
   isExecutable = true;
   libraryHaskellDepends = [
     aeson base bytestring directory filepath gogol gogol-core
-    gogol-firestore gogol-storage htaglib lens servant-multipart
+    gogol-firestore gogol-storage htaglib lens mtl servant-multipart
     servant-server text time uuid wai wai-extra warp xml
   ];
   executableHaskellDepends = [ base ];
