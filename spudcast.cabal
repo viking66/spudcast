@@ -71,3 +71,22 @@ executable server
   ghc-options:         -Wall -Wcompat -Wincomplete-record-updates
                        -Wincomplete-uni-patterns -Wredundant-constraints
                        -Wno-name-shadowing
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  hs-source-dirs: test
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+    -Wredundant-constraints -Wno-name-shadowing
+  default-extensions:  OverloadedStrings
+  build-depends:
+      base >=4.12 && <4.13
+    , hspec
+    , spudcast
+    , text
+    , time
+  other-modules:
+      Spudcast.API.TypesSpec
+  default-language: Haskell2010
+  build-tool-depends: hspec-discover:hspec-discover

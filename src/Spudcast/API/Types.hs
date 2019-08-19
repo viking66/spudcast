@@ -5,7 +5,19 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Spudcast.API.Types where
+module Spudcast.API.Types
+  ( CreatePodcastReq (..)
+  , EpisodeDetails (..)
+  , NewEpisodeReq (..)
+  , NewPodcastDetails (..)
+  , PodcastResp (..)
+  , audioPath
+  , imageExt
+  , imagePath
+  , podcastToResp
+  , reqToNewEpisodeDetails
+  , reqToPodcastDetails
+  ) where
 
 import Control.Lens
 import Data.Aeson
@@ -32,7 +44,7 @@ data NewPodcastDetails = NewPodcastDetails
   , _explicit :: Bool
   , _category :: Text
   }
-  deriving (Generic)
+  deriving (Eq, Generic)
 makeFieldsNoPrefix ''NewPodcastDetails
 deriveJSON defaultOptions{fieldLabelModifier = drop 1} ''NewPodcastDetails
 
@@ -41,8 +53,10 @@ data CreatePodcastReq = CreatePodcastReq
   , _imagePath :: FilePath
   , _imageExt :: Text
   }
+  deriving (Eq)
 makeFieldsNoPrefix ''CreatePodcastReq
 
+-- Expects a filetype of the form type/subtype (e.g. image/jpeg)
 fileTypeExt :: Text -> Maybe Text
 fileTypeExt = getExt . fileTypeParts
   where
@@ -64,7 +78,7 @@ data EpisodeDetails = EpisodeDetails
   , _description :: Text
   , _number :: Int
   }
-  deriving (Generic)
+  deriving (Eq, Generic)
 makeFieldsNoPrefix ''EpisodeDetails
 deriveJSON defaultOptions{fieldLabelModifier = drop 1} ''EpisodeDetails
 
@@ -72,6 +86,7 @@ data NewEpisodeReq = NewEpisodeReq
   { _episodeDetails :: EpisodeDetails
   , _audioPath :: FilePath
   }
+  deriving (Eq)
 makeFieldsNoPrefix ''NewEpisodeReq
 
 instance FromMultipart Tmp NewEpisodeReq where
@@ -92,7 +107,7 @@ data PodcastResp = PodcastResp
   , _explicit :: Bool
   , _category :: Text
   }
-  deriving (Generic)
+  deriving (Show, Eq, Generic)
 makeFieldsNoPrefix ''PodcastResp
 deriveJSON defaultOptions{fieldLabelModifier = drop 1} ''PodcastResp
 

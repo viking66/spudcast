@@ -52,7 +52,7 @@ data PodcastDetails = PodcastDetails
   , _explicit :: Bool
   , _category :: Text
   }
-  deriving Show
+  deriving (Show, Eq)
 makeFieldsNoPrefix ''PodcastDetails
 
 data Podcast = Podcast
@@ -68,5 +68,5 @@ data NewEpisodeDetails = NewEpisodeDetails
   , _description :: Text
   , _number :: Int
   }
-  deriving Show
+  deriving (Show, Eq)
 makeFieldsNoPrefix ''NewEpisodeDetails
