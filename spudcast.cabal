@@ -90,3 +90,20 @@ test-suite spec
       Spudcast.API.TypesSpec
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover
+
+test-suite prop
+  type: exitcode-stdio-1.0
+  main-is: Prop.hs
+  hs-source-dirs: test
+  ghc-options:
+    -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+    -Wredundant-constraints -Wno-name-shadowing
+  build-depends:
+      base >=4.12 && <4.13
+    , hedgehog
+    , lens
+    , spudcast
+    , time
+  other-modules:
+      Spudcast.API.TypesProp
+  default-language: Haskell2010

@@ -12,10 +12,11 @@ module Spudcast.API.Types
   , NewPodcastDetails (..)
   , PodcastResp (..)
   , audioPath
+  , episodeDetails
   , imageExt
   , imagePath
+  , newEpIso
   , podcastToResp
-  , reqToNewEpisodeDetails
   , reqToPodcastDetails
   ) where
 
@@ -44,7 +45,7 @@ data NewPodcastDetails = NewPodcastDetails
   , _explicit :: Bool
   , _category :: Text
   }
-  deriving (Eq, Generic)
+  deriving (Show, Eq, Generic)
 makeFieldsNoPrefix ''NewPodcastDetails
 deriveJSON defaultOptions{fieldLabelModifier = drop 1} ''NewPodcastDetails
 
@@ -53,7 +54,7 @@ data CreatePodcastReq = CreatePodcastReq
   , _imagePath :: FilePath
   , _imageExt :: Text
   }
-  deriving (Eq)
+  deriving (Show, Eq)
 makeFieldsNoPrefix ''CreatePodcastReq
 
 -- Expects a filetype of the form type/subtype (e.g. image/jpeg)
@@ -78,7 +79,7 @@ data EpisodeDetails = EpisodeDetails
   , _description :: Text
   , _number :: Int
   }
-  deriving (Eq, Generic)
+  deriving (Show, Eq, Generic)
 makeFieldsNoPrefix ''EpisodeDetails
 deriveJSON defaultOptions{fieldLabelModifier = drop 1} ''EpisodeDetails
 
@@ -86,7 +87,7 @@ data NewEpisodeReq = NewEpisodeReq
   { _episodeDetails :: EpisodeDetails
   , _audioPath :: FilePath
   }
-  deriving (Eq)
+  deriving (Show, Eq)
 makeFieldsNoPrefix ''NewEpisodeReq
 
 instance FromMultipart Tmp NewEpisodeReq where
@@ -142,12 +143,21 @@ reqToPodcastDetails req t =
     , _category = pd^.category
     }
 
-reqToNewEpisodeDetails :: NewEpisodeReq -> UTCTime -> NewEpisodeDetails
-reqToNewEpisodeDetails req t =
-  let ed = req^.episodeDetails
-  in NewEpisodeDetails
-    { _createDate = t
-    , _title = ed^.title
-    , _description = ed^.description
-    , _number = ed^.number
-    }
+newEpIso :: Iso' (EpisodeDetails, UTCTime) NewEpisodeDetails
+newEpIso = iso fromReq toReq
+  where
+    fromReq :: (EpisodeDetails, UTCTime) -> NewEpisodeDetails
+    fromReq (ed, t) = NewEpisodeDetails
+      { _createDate = t
+      , _title = ed^.title
+      , _description = ed^.description
+      , _number = ed^.number
+      }
+    toReq :: NewEpisodeDetails -> (EpisodeDetails, UTCTime)
+    toReq ned = (ed, ned^.createDate)
+      where
+        ed = EpisodeDetails
+          { _title = ned^.title
+          , _description = ned^.description
+          , _number = ned^.number
+          }

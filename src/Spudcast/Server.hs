@@ -46,7 +46,7 @@ server = pure "pong"
       Handlers.writeEpisode
         pId
         (req^.audioPath)
-        (reqToNewEpisodeDetails req t)
+        ((req^.episodeDetails, t)^.newEpIso)
 
 toServerError :: AppError -> ServantErr
 toServerError BadPodcastId =

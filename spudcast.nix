@@ -1,7 +1,8 @@
 { mkDerivation, aeson, base, bytestring, directory, filepath, gogol
-, gogol-core, gogol-firestore, gogol-storage, hspec, hspec-discover
-, htaglib, lens, mtl, servant-multipart, servant-server, stdenv
-, text, time, uuid, wai, wai-extra, warp, xml
+, gogol-core, gogol-firestore, gogol-storage, hedgehog, hspec
+, hspec-discover, htaglib, lens, mtl, servant-multipart
+, servant-server, stdenv, text, time, uuid, wai, wai-extra, warp
+, xml
 }:
 mkDerivation {
   pname = "spudcast";
@@ -15,7 +16,7 @@ mkDerivation {
     servant-server text time uuid wai wai-extra warp xml
   ];
   executableHaskellDepends = [ base ];
-  testHaskellDepends = [ base hspec text time ];
+  testHaskellDepends = [ base hedgehog hspec lens text time ];
   testToolDepends = [ hspec-discover ];
   license = stdenv.lib.licenses.bsd3;
 }

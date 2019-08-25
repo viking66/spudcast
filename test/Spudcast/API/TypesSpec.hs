@@ -27,13 +27,6 @@ spec = do
           pd = PodcastDetails utcTime title' description' link' host' email'
             explicit' category'
       reqToPodcastDetails req utcTime `shouldBe` pd
-  describe "reqToNewEpisodeDetails" $ do
-    it "constructs NewEpisodeDetails with proper fields" $ do
-      let n = 42
-          ed = EpisodeDetails title' description' n
-          req = NewEpisodeReq ed path
-          ned = NewEpisodeDetails utcTime title' description' n
-      reqToNewEpisodeDetails req utcTime `shouldBe` ned
   where
     podcastId' = "podcastId"
     utcTime = UTCTime (ModifiedJulianDay 58713) 0
