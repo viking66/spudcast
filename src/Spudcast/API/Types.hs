@@ -16,7 +16,7 @@ module Spudcast.API.Types
   , imageExt
   , imagePath
   , newEpIso
-  , podcastToResp
+  , podcastRespIso
   , reqToPodcastDetails
   ) where
 
@@ -114,20 +114,38 @@ deriveJSON defaultOptions{fieldLabelModifier = drop 1} ''PodcastResp
 
 -- Type Conversions
 
-podcastToResp :: Podcast -> PodcastResp
-podcastToResp p =
-  let pd = p^.podcastDetails
-  in PodcastResp
-    { _podcastId = p^.podcastId
-    , _createDate = pd^.createDate
-    , _title = pd^.title
-    , _description = pd^.description
-    , _link = pd^.link
-    , _host = pd^.host
-    , _email = pd^.email
-    , _explicit = pd^.explicit
-    , _category = pd^.category
-    }
+podcastRespIso :: Iso' PodcastResp Podcast
+podcastRespIso = iso fromResp toResp
+  where
+    fromResp :: PodcastResp -> Podcast
+    fromResp r = Podcast
+      { _podcastId = r^.podcastId
+        , _podcastDetails = pd
+      }
+        where
+          pd = PodcastDetails
+            { _createDate = r^.createDate
+            , _title = r^.title
+            , _description = r^.description
+            , _link = r^.link
+            , _host = r^.host
+            , _email = r^.email
+            , _explicit = r^.explicit
+            , _category = r^.category
+            }
+    toResp :: Podcast -> PodcastResp
+    toResp p = let pd = p^.podcastDetails
+               in PodcastResp
+                 { _podcastId = p^.podcastId
+                 , _createDate = pd^.createDate
+                 , _title = pd^.title
+                 , _description = pd^.description
+                 , _link = pd^.link
+                 , _host = pd^.host
+                 , _email = pd^.email
+                 , _explicit = pd^.explicit
+                 , _category = pd^.category
+                 }
 
 reqToPodcastDetails :: CreatePodcastReq -> UTCTime -> PodcastDetails
 reqToPodcastDetails req t =

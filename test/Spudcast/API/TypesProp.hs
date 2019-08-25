@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Spudcast.API.TypesProp (tests) where
 
@@ -19,6 +20,29 @@ genUTCTime = do
   let diff = secondsToDiffTime secs
   pure $ UTCTime day diff
 
+genPodcastResp :: Gen PodcastResp
+genPodcastResp = do
+  pId <- Gen.text (Range.linear 10 20) Gen.unicode
+  time <- genUTCTime
+  title <- Gen.text (Range.linear 10 100) Gen.unicode
+  description <- Gen.text (Range.linear 10 500) Gen.unicode
+  link <- Gen.text (Range.linear 10 50) Gen.unicode
+  host <- Gen.text (Range.linear 5 20) Gen.unicode
+  email <- Gen.text (Range.linear 10 50) Gen.unicode
+  explicit <- Gen.bool
+  category <- Gen.text (Range.linear 10 20) Gen.unicode
+  pure $ PodcastResp
+    { _podcastId = pId
+    , _createDate = time
+    , _title = title
+    , _description = description
+    , _link = link
+    , _host = host
+    , _email = email
+    , _explicit = explicit
+    , _category = category
+    }
+
 genEpisodeDetails :: Gen (EpisodeDetails, UTCTime)
 genEpisodeDetails = do
   title <- Gen.text (Range.linear 10 100) Gen.unicode
@@ -26,6 +50,12 @@ genEpisodeDetails = do
   number <- Gen.int (Range.constant 0 100)
   time <- genUTCTime
   pure $ (EpisodeDetails title description number, time)
+
+prop_podcastRespIso :: Property
+prop_podcastRespIso =
+  property $ do
+    resp <- forAll genPodcastResp
+    assert $ resp^.podcastRespIso^.from podcastRespIso == resp
 
 prop_newEpIso :: Property
 prop_newEpIso =

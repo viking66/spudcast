@@ -29,7 +29,7 @@ server = pure "pong"
 
   where
     getPodcast :: Text -> AppM PodcastResp
-    getPodcast = fmap podcastToResp . Handlers.getPodcast
+    getPodcast = fmap (view $ from podcastRespIso) . Handlers.getPodcast
 
     createPodcast :: CreatePodcastReq -> AppM PodcastResp
     createPodcast req = do
@@ -38,7 +38,7 @@ server = pure "pong"
         (req^.imagePath)
         (req^.imageExt)
         (reqToPodcastDetails req t)
-      pure $ podcastToResp ep
+      pure $ ep^.from podcastRespIso
 
     writeEpisode :: Text -> NewEpisodeReq -> AppM Text
     writeEpisode pId req = do
