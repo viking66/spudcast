@@ -27,10 +27,6 @@ import qualified Spudcast.Effects as Effects
 import Spudcast.Feed
 import Spudcast.Types
 
-uploadName :: UUID -> UTCTime -> Text
-uploadName u t = Text.intercalate "." [toText u, timePart, "mp3"]
-  where timePart = Text.pack $ formatTime defaultTimeLocale "%Y%m%d%H%M" t
-
 getPodcast :: (DB m) => PodcastId -> m Podcast
 getPodcast = Effects.getPodcast
 
@@ -65,6 +61,13 @@ mkWriteTags p ned t =
     , _comment = ned^.description
     }
 
+uploadName :: UUID -> UTCTime -> Text
+uploadName u t = Text.intercalate "." [toText u, timePart, "mp3"]
+  where timePart = Text.pack $ formatTime defaultTimeLocale "%Y%m%d%H%M" t
+
+audioStoragePath :: PodcastId -> Text -> Text
+audioStoragePath podcastId outputName = podcastId <> "/audio/" <> outputName
+
 writeEpisode :: (Filesystem m, HasUUID m, Storage m, AudioTags m, DB m)
               => PodcastId
               -> FilePath
@@ -75,12 +78,13 @@ writeEpisode p audioPath ned = do
   podcast <- Effects.getPodcast p
   let t = ned^.createDate
       remoteName = uploadName u t
+      remotePath = audioStoragePath p remoteName
       localName = replaceFileName audioPath (Text.unpack remoteName)
       tags = mkWriteTags podcast ned t
   _ <- mv audioPath localName
   _ <- writeTags localName tags
   tags' <- readTags localName
   size <- fileSize localName
-  _ <- writePrivate localName remoteName
+  _ <- writePublic localName remotePath
   _ <- rm localName
-  pure $ podcastItem tags' remoteName u t size
+  pure $ podcastItem tags' remotePath u t size

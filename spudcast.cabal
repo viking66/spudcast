@@ -100,7 +100,7 @@ test-suite prop
     -Wredundant-constraints -Wno-name-shadowing
   build-depends:
       base >=4.12 && <4.13
-    , hedgehog
+    , hedgehog >=1.0
     , lens
     , spudcast
     , time
