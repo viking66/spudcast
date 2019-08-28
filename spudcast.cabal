@@ -87,7 +87,6 @@ test-suite spec
     , text
     , time
   other-modules:
-      Spudcast.API.TypesSpec
   default-language: Haskell2010
   build-tool-depends: hspec-discover:hspec-discover
 
