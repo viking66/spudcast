@@ -58,7 +58,7 @@ mkEmptyLiteralelemAttr n as = mkElemAttr n as' []
   where as' = map (uncurry mkAttr) as
 
 podcastItem :: ReadTags -> Text.Text -> UUID -> UTCTime -> Integer -> Text.Text
-podcastItem tags fn uuid ts len = Text.pack . ppElement $ itemElem
+podcastItem tags audioPath uuid ts len = Text.pack . ppElement $ itemElem
   where
     titleElem = mkLiteralElem "title" (tags^.title)
     desc = "<p>" <> (tags^.comment) <> "</p>"
@@ -74,9 +74,8 @@ podcastItem tags fn uuid ts len = Text.pack . ppElement $ itemElem
     iExplicitElem = mkLiteralElem "itunes:explicit" "yes"
     iImageElem = mkEmptyLiteralelemAttr "itunes:image" [("href", "http://www.stanleystots.com/stanleys_tots.jpg")]
     iDurationElem = mkLiteralElem "itunes:duration" (formatDuration (tags^.duration))
-    url = "http://www.stanleystots.com/" <> fn
     length = Text.pack . show $ len
-    enclosureElem = mkEmptyLiteralelemAttr "enclosure" [("url", url), ("type", "audio/mpeg"), ("length", length)]
+    enclosureElem = mkEmptyLiteralelemAttr "enclosure" [("url", audioPath), ("type", "audio/mpeg"), ("length", length)]
     itemElem = mkElem "item" $ map Elem
       [ titleElem, descElem, iTitleElem, iTypeElem, iEpElem, iSummaryElem
       , guidElem, pubDateElem, iExplicitElem, iImageElem, iDurationElem

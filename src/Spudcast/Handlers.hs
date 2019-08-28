@@ -66,7 +66,11 @@ uploadName u t = Text.intercalate "." [toText u, timePart, "mp3"]
   where timePart = Text.pack $ formatTime defaultTimeLocale "%Y%m%d%H%M" t
 
 audioStoragePath :: PodcastId -> Text -> Text
-audioStoragePath podcastId outputName = podcastId <> "/audio/" <> outputName
+audioStoragePath podcastId outputName =
+  "https://storage.googleapis.com/spudcast_dev/"
+  <> podcastId
+  <> "/audio/"
+  <> outputName
 
 writeEpisode :: (Filesystem m, HasUUID m, Storage m, AudioTags m, DB m)
               => PodcastId
