@@ -37,7 +37,7 @@ server = pure "pong"
       ep <- Handlers.createPodcast
         (req^.imagePath)
         (req^.imageExt)
-        (reqToPodcastDetails req t)
+        ((req^.newPodcastDetails, t)^.newPodcastIso)
       pure $ ep^.from podcastRespIso
 
     writeEpisode :: Text -> NewEpisodeReq -> AppM Text

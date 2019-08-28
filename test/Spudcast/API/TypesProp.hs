@@ -43,6 +43,27 @@ genPodcastResp = do
     , _category = category
     }
 
+genNewPodcastDetails :: Gen (NewPodcastDetails, UTCTime)
+genNewPodcastDetails = do
+  time <- genUTCTime
+  title <- Gen.text (Range.linear 10 100) Gen.unicode
+  description <- Gen.text (Range.linear 10 500) Gen.unicode
+  link <- Gen.text (Range.linear 10 50) Gen.unicode
+  host <- Gen.text (Range.linear 5 20) Gen.unicode
+  email <- Gen.text (Range.linear 10 50) Gen.unicode
+  explicit <- Gen.bool
+  category <- Gen.text (Range.linear 10 20) Gen.unicode
+  let npd = NewPodcastDetails
+              { _title = title
+              , _description = description
+              , _link = link
+              , _host = host
+              , _email = email
+              , _explicit = explicit
+              , _category = category
+              }
+  pure (npd, time)
+
 genEpisodeDetails :: Gen (EpisodeDetails, UTCTime)
 genEpisodeDetails = do
   title <- Gen.text (Range.linear 10 100) Gen.unicode
@@ -56,6 +77,12 @@ prop_podcastRespIso =
   property $ do
     resp <- forAll genPodcastResp
     assert $ resp^.podcastRespIso^.from podcastRespIso == resp
+
+prop_newPodcastIso :: Property
+prop_newPodcastIso =
+  property $ do
+    npd <- forAll genNewPodcastDetails
+    assert $ npd^.newPodcastIso^.from newPodcastIso == npd
 
 prop_newEpIso :: Property
 prop_newEpIso =

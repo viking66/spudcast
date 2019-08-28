@@ -16,8 +16,9 @@ module Spudcast.API.Types
   , imageExt
   , imagePath
   , newEpIso
+  , newPodcastDetails
+  , newPodcastIso
   , podcastRespIso
-  , reqToPodcastDetails
   ) where
 
 import Control.Lens
@@ -147,19 +148,32 @@ podcastRespIso = iso fromResp toResp
                  , _category = pd^.category
                  }
 
-reqToPodcastDetails :: CreatePodcastReq -> UTCTime -> PodcastDetails
-reqToPodcastDetails req t =
-  let pd = req^.newPodcastDetails
-  in PodcastDetails
-    { _createDate = t
-    , _title = pd^.title
-    , _description = pd^.description
-    , _link = pd^.link
-    , _host = pd^.host
-    , _email = pd^.email
-    , _explicit = pd^.explicit
-    , _category = pd^.category
-    }
+newPodcastIso :: Iso' (NewPodcastDetails, UTCTime) PodcastDetails
+newPodcastIso = iso fromReq toReq
+  where
+    fromReq :: (NewPodcastDetails, UTCTime) -> PodcastDetails
+    fromReq (npd, t) = PodcastDetails
+      { _createDate = t
+      , _title = npd^.title
+      , _description = npd^.description
+      , _link = npd^.link
+      , _host = npd^.host
+      , _email = npd^.email
+      , _explicit = npd^.explicit
+      , _category = npd^.category
+      }
+    toReq :: PodcastDetails -> (NewPodcastDetails, UTCTime)
+    toReq pd = (npd, pd^.createDate)
+      where
+        npd = NewPodcastDetails
+          { _title = pd^.title
+          , _description = pd^.description
+          , _link = pd^.link
+          , _host = pd^.host
+          , _email = pd^.email
+          , _explicit = pd^.explicit
+          , _category = pd^.category
+          }
 
 newEpIso :: Iso' (EpisodeDetails, UTCTime) NewEpisodeDetails
 newEpIso = iso fromReq toReq

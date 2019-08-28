@@ -15,7 +15,6 @@ import Servant.Multipart ( MultipartForm
 
 import Spudcast.API.Types
 
--- TODO add proper error handling and replace Maybe
 type API = "ping" :> Get '[PlainText] Text
       :<|> "podcast" :> Capture "podcastId" Text :> Get '[JSON] PodcastResp
       :<|> "podcast" :> MultipartForm Tmp CreatePodcastReq :> Post '[JSON] PodcastResp
